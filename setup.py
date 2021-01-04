@@ -22,5 +22,5 @@ setup(
         "Topic :: Scientific/Engineering"
     ],
     python_requires='>=3.8',
-    install_requires=["numpy", "pandas", "h5py", "s3fs"]
+    install_requires=["numpy", "pandas", "h5py", "s3fs", "tqdm"]
 )
