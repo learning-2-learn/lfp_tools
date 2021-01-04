@@ -5,15 +5,15 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
     
 setup(
-    name="tools_wcst_lfp",
+    name="lfp_tools",
     version="0.0.1",
     author="John Ferré",
     author_email="jbferre@uw.edu",
     description="Useful tools that pertain to wcst lfp data",
     long_description=long_description,
-    url="jdfksdjfl",
+    url="https://github.com/learning-2-learn/lfp_tools",
     packages=find_packages(),
-    package_data={'tools_wcst_lfp': glob('data/*')},
+    package_data={'lfp_tools': glob('data/*')},
     classifiers=[
         "Programming language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
