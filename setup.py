@@ -3,7 +3,7 @@ from glob import glob
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
-
+    
 setup(
     name="lfp_tools",
     version="0.0.1",
@@ -13,7 +13,7 @@ setup(
     long_description=long_description,
     url="https://github.com/learning-2-learn/lfp_tools",
     packages=find_packages(),
-    package_data={'lfp_tools': ['data/*.json']},
+    package_data={'lfp_tools': glob('lfp_tools/data/*')},
     classifiers=[
         "Programming language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
@@ -22,5 +22,5 @@ setup(
         "Topic :: Scientific/Engineering"
     ],
     python_requires='>=3.8',
-    install_requires=["numpy", "pandas", "h5py", "s3fs", "tqdm"]
+    install_requires=["numpy==1.19.3", "pandas", "aiobotocore>=1.0.1", "h5py", "s3fs", "tqdm"]
 )
