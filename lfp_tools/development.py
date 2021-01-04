@@ -1,4 +1,4 @@
-import tools_general
+from lfp_tools import general
 import configparser
 import os.path as op
 import s3fs
@@ -26,7 +26,7 @@ def get_filenames(fs, session_id, subject, datatype, params=[]):
     ----------------
     list of filenames
     '''
-    file_loc = tools_general.load_json_file('file_locations.json')
+    file_loc = general.load_json_file('file_locations.json')
     files = []
     
     if (datatype == 'behavior'):

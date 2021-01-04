@@ -1,5 +1,4 @@
-from tools_wcst_lfp import general
-#import tools_general
+from lfp_tools import general
 import numpy as np
 import pandas as pd
 
@@ -75,7 +74,7 @@ def get_chan_neighbors(chan):
     --------------
     list of locations of nearest neighbors
     """
-    channels = tools_general.load_json_file('channels.json')
+    channels = general.load_json_file('channels.json')
     if ('a' in chan):
         drive_chans = np.array(channels['drive_pfc'])
     else:
@@ -107,7 +106,7 @@ def get_bad_channels(subject, session):
     ---------------
     List of bad channels
     """
-    bad_channels = tools_general.load_json_file('bad_channels.json')
+    bad_channels = general.load_json_file('bad_channels.json')
     all_sessions = list(bad_channels.keys())
     if (subject + session in all_sessions):
         return (bad_channels[subject + session])

@@ -1,5 +1,5 @@
-import tools_general
-import tools_analysis
+from lfp_tools import general
+from lfp_tools import analysis
 from collections import Counter
 import pandas as pd
 import numpy as np
@@ -10,7 +10,7 @@ def get_session_ids():
     '''
     Finds and returns all of the possible session ids.
     '''
-    file_loc = tools_general.load_json_file('file_locations.json')
+    file_loc = general.load_json_file('file_locations.json')
     return(file_loc['sess'])
 
 def get_all_chans(params=None):
@@ -26,7 +26,7 @@ def get_all_chans(params=None):
     ----------------
     chans: the channel names
     '''
-    file_loc = tools_general.load_json_file('file_locations.json')
+    file_loc = general.load_json_file('file_locations.json')
     chans = file_loc['chan']
     if (not params):
         chans = [c for c in chans if not 'GR' in c]
@@ -97,7 +97,7 @@ def get_eye_data(fs, sess_id, sub, sample=True):
     
     eye = []
     for i in range(3):
-        temp = tools_general.open_h5py_file(file_eye[i], fs)
+        temp = general.open_h5py_file(file_eye[i], fs)
         if (sample):
             eye.append(temp[::2])
         else:
@@ -368,7 +368,7 @@ def _beh_check_last_cor(df):
     """
     Check if there are groups where there are neither regular groups or single trial groups.
     """
-    breaks = tools_analysis.beh_get_breaks(df)
+    breaks = analysis.beh_get_breaks(df)
     if (breaks.size > 0):
         breaks = [int(b-0.5) for b in breaks]
         bad = df[(df['badGroup'] != 0) & (df['badGroup'] != 1)]
