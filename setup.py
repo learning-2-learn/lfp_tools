@@ -13,7 +13,7 @@ setup(
     long_description=long_description,
     url="https://github.com/learning-2-learn/lfp_tools",
     packages=find_packages(),
-    package_data={'lfp_tools': glob('data/*.json')},
+    package_data={'lfp_tools': ['data/*.json']},
     classifiers=[
         "Programming language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
