@@ -6,6 +6,10 @@ import os
 import numpy as np
 
 
+def get_package_data(path):
+    _ROOT = os.path.abspath(os.path.dirname(__file__))
+    return os.path.join(_ROOT, 'data', path)
+
 def save_json_file(data, filename, overwrite=False):
     """
     Creates json file from dictionary
