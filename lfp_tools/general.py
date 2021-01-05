@@ -7,12 +7,24 @@ import numpy as np
 
 
 def get_package_data(path):
+    """
+    Finds the path to the packaged data
+    
+    Parameters
+    ----------
+    path : filename to check
+    
+    Returns
+    -------
+    path to filename
+    """
     _ROOT = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(_ROOT, 'data', path)
 
 def save_json_file(data, filename, overwrite=False):
     """
-    Creates json file from dictionary
+    Creates json file from dictionary.
+    json files are stored in lfp_tools/data
 
     Parameters
     ----------
@@ -23,18 +35,19 @@ def save_json_file(data, filename, overwrite=False):
     -------
     filename of local storage
     """
-    if (os.path.exists(filename) and overwrite):
+    if (os.path.exists(get_package_data(filename)) and overwrite):
         print('Overwriting...')
-    elif (os.path.exists(filename) and not overwrite):
+    elif (os.path.exists(get_package_data(filename)) and not overwrite):
         print('File already exists, set overwrite to True')
-        return filename
-    with open(filename, 'w') as ff:
+        return get_package_data(filename)
+    with open(get_package_data(filename), 'w') as ff:
         json.dump(data, ff)
-    return filename
+    return get_package_data(filename)
 
 def load_json_file(filename):
     """
     Loads a json_file
+    json files are stored in lfp_tools/data
 
     Parameters
     ----------
@@ -44,7 +57,7 @@ def load_json_file(filename):
     -------
     data: the contents of the json file
     """
-    with open(filename, 'r') as ff:
+    with open(get_package_data(filename), 'r') as ff:
         data = json.load(ff)
     return data
 
@@ -137,6 +150,7 @@ def get_results(log):
 def merge_json_dicts(master_file, branch_file, remove_duplicates=True):
     """
     Merges two json dictionaries, and discard branch_file
+    json files are stored in lfp_tools/data
     
     Parameters
     ----------------
@@ -148,14 +162,14 @@ def merge_json_dicts(master_file, branch_file, remove_duplicates=True):
     ----------------
     Message with filenames
     """
-    if (not os.path.exists(master_file)):
+    if (not os.path.exists(get_package_data(master_file))):
         print(master_file + ' doesn\'t exist, check name')
-    if (not os.path.exists(branch_file)):
+    if (not os.path.exists(get_package_data(branch_file))):
         print(branch_file + ' doesn\'t exist, check name')
-    if (not os.path.exists(master_file) or not os.path.exists(branch_file)):
+    if (not os.path.exists(get_package_data(master_file)) or not os.path.exists(get_package_data(branch_file))):
         return('Files not merged')
-    master_dict = load_json_file(master_file)
-    branch_dict = load_json_file(branch_file)
+    master_dict = load_json_file(get_package_data(master_file))
+    branch_dict = load_json_file(get_package_data(branch_file))
     master_keys = list(master_dict.keys())
     branch_keys = list(branch_dict.keys())
     for b in branch_keys:
@@ -164,12 +178,13 @@ def merge_json_dicts(master_file, branch_file, remove_duplicates=True):
         else:
             master_dict[b] = branch_dict[b]
     save_json_file(master_dict, master_file, True)
-    os.remove(branch_file)
-    return('Files merged: ' + master_file + ' + ' + branch_file)
+    os.remove(get_package_data(branch_file))
+    return('Files merged: ' + get_package_data(master_file) + ' + ' + get_package_data(branch_file))
 
 def remove_json_dicts(master_file, branch_file):
     """
     Removes values and subsequent empty keys from master_file, and discards branch_file
+    json files are stored in lfp_tools/data
     
     Parameters
     ---------------
@@ -180,11 +195,11 @@ def remove_json_dicts(master_file, branch_file):
     ---------------
     Message of success with filenames
     """
-    if (not os.path.exists(master_file)):
+    if (not os.path.exists(get_package_data(master_file))):
         print(master_file + ' doesn\'t exist, check name')
-    if (not os.path.exists(branch_file)):
+    if (not os.path.exists(get_package_data(branch_file))):
         print(branch_file + ' doesn\'t exist, check name')
-    if (not os.path.exists(master_file) or not os.path.exists(branch_file)):
+    if (not os.path.exists(get_package_data(master_file)) or not os.path.exists(get_package_data(branch_file))):
         return('Values not removed')
     master_dict = load_json_file(master_file)
     branch_dict = load_json_file(branch_file)
@@ -196,5 +211,5 @@ def remove_json_dicts(master_file, branch_file):
             if (len(master_dict[b])==0):
                 master_dict.pop(b, None)
     save_json_file(master_dict, master_file, True)
-    os.remove(branch_file)
-    return('Dictionary values removed: ' + master_file + ' + ' + branch_file)
+    os.remove(get_package_data(branch_file))
+    return('Dictionary values removed: ' + get_package_data(master_file) + ' + ' + get_package_data(branch_file))
