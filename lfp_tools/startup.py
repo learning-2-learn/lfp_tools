@@ -4,14 +4,26 @@ from collections import Counter
 import pandas as pd
 import numpy as np
 
-import tools_development
+from lfp_tools import development
 
-def get_session_ids():
+def get_session_ids(all_ids=False):
     '''
     Finds and returns all of the possible session ids.
+    
+    Parameters
+    -----------
+    all_ids : flag indicating whether to include all sessions or just \'good\' sessions
+    
+    Returns
+    -----------
+    sess_ids : session ids
     '''
-    file_loc = general.load_json_file('file_locations.json')
-    return(file_loc['sess'])
+    if (all_ids):
+        file_loc = general.load_json_file('file_locations.json')
+        return(file_loc['sess'])
+    else:
+        sessions = general.load_json_file('good_sessions.json')
+        return(sessions['SA'])
 
 def get_all_chans(params=None):
     '''
@@ -51,7 +63,7 @@ def get_behavior(fs, sess_id, sub):
     ----------------
     df: dataframe of behavior
     """
-    file_beh = tools_development.get_filenames(fs, sess_id, sub, 'behavior')
+    file_beh = development.get_filenames(fs, sess_id, sub, 'behavior')
     if (file_beh):
         file_beh = file_beh[0]
     else:
@@ -91,7 +103,7 @@ def get_eye_data(fs, sess_id, sub, sample=True):
     eye[1]: horizontal displacement
     eye[2]: vertical displacement
     """
-    file_eye = tools_development.get_filenames(fs, sess_id, sub, 'eye')
+    file_eye = development.get_filenames(fs, sess_id, sub, 'eye')
     if (not file_eye):
         return (file_eye, file_eye, file_eye)
     
