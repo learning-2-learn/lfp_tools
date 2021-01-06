@@ -128,7 +128,7 @@ def save_h5py_file(data, col_name, filename='new_file'):
     file.close()
     return filename
 
-def batch_process(func, params, client, upload_mods=[]):
+def batch_process(func, params, client):
     """ 
     Map `params` onto `func` and submit to a dask kube cluster.
     
@@ -145,8 +145,6 @@ def batch_process(func, params, client, upload_mods=[]):
     client : a dask Client to an initialized cluster, optional. 
         Defaults to start a new client.
     """
-    for m in upload_mods:
-        client.upload_file(m)
     results = client.map(func, params)
     
     all_done = False 
