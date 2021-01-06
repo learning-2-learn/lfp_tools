@@ -121,47 +121,47 @@ def get_eye_data(fs, sess_id, sub, sample=True):
 
 #Unsure if used
 
-import tools
+#import tools
 #import tools_specific
-import gcsfs
-import json
-import scipy.io
+#import gcsfs
+#import json
+#import scipy.io
 
-def startup_fs(token="cache"):
-    fs = gcsfs.GCSFileSystem(project='learning-2-learn-221016', token=token)
-    return(fs)
+#def startup_fs(token="cache"):
+#    fs = gcsfs.GCSFileSystem(project='learning-2-learn-221016', token=token)
+#    return(fs)
     
-def startup_kernal(fs, n_workers=10):
-    cluster, client = tools.init_cluster(n_workers=n_workers)
-    fs = gcsfs.GCSFileSystem(project='learning-2-learn-221016', token=fs.session.credentials)
-    return(cluster, client, fs)
+#def startup_kernal(fs, n_workers=10):
+#    cluster, client = tools.init_cluster(n_workers=n_workers)
+#    fs = gcsfs.GCSFileSystem(project='learning-2-learn-221016', token=fs.session.credentials)
+#    return(cluster, client, fs)
 
-def startup_general(fs):
-    """
-    vo is not general
-    """
-    with open('startup.json') as json_file:
-        metadata = json.load(json_file)
-        
-    df = tools.get_behavior_df(metadata['behavior_file'], fs, int(metadata['behavior_t_remove_from_end']), metadata['behavior_remove'], metadata['behavior_unique'])
+#def startup_general(fs):
+#    """
+#    vo is not general
+#    """
+#    with open('startup.json') as json_file:
+#        metadata = json.load(json_file)
+#        
+#    df = tools.get_behavior_df(metadata['behavior_file'], fs, int(metadata['behavior_t_remove_from_end']), #metadata['behavior_remove'], metadata['behavior_unique'])
     
-    obj0 = scipy.io.loadmat('obj0.mat')['trl_test0'][:960]
-    obj1 = scipy.io.loadmat('obj1.mat')['trl_test1'][:960]
-    obj2 = scipy.io.loadmat('obj2.mat')['trl_test2'][:960]
-    obj3 = scipy.io.loadmat('obj3.mat')['trl_test3'][:960]
-    vo = tools_specific.convert_obj_to_num(tools_specific.get_viewed_obj(df, obj0, obj1, obj2, obj3))
+#    obj0 = scipy.io.loadmat('obj0.mat')['trl_test0'][:960]
+#    obj1 = scipy.io.loadmat('obj1.mat')['trl_test1'][:960]
+#    obj2 = scipy.io.loadmat('obj2.mat')['trl_test2'][:960]
+#    obj3 = scipy.io.loadmat('obj3.mat')['trl_test3'][:960]
+#    vo = tools_specific.convert_obj_to_num(tools_specific.get_viewed_obj(df, obj0, obj1, obj2, obj3))
     
-    df['vo_0'] = -1
-    df['vo_1'] = -1
-    df['vo_2'] = -1
+#    df['vo_0'] = -1
+#    df['vo_1'] = -1
+#    df['vo_2'] = -1
     
-    idx = df[(df['encode']==2300) | (df['encode']==2500) | (df['encode']==2700) | (df['encode']==2900)].index.values
+#    idx = df[(df['encode']==2300) | (df['encode']==2500) | (df['encode']==2700) | (df['encode']==2900)].index.values
     
-    df.loc[idx,'vo_0'] = vo[:,0]
-    df.loc[idx,'vo_1'] = vo[:,1]
-    df.loc[idx,'vo_2'] = vo[:,2]
+#    df.loc[idx,'vo_0'] = vo[:,0]
+#    df.loc[idx,'vo_1'] = vo[:,1]
+#    df.loc[idx,'vo_2'] = vo[:,2]
     
-    return(df, vo)
+#    return(df, vo)
     
     
 
