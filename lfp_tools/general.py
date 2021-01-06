@@ -6,6 +6,26 @@ import os
 import numpy as np
 
 
+def new_derivative_name(filename, derivative):
+    """
+    Finds the new file location name for the derivative
+
+    Parameters
+    ----------
+    filename: the location of the file to be changed.
+    derivative: the name of the new derivative. E.g. mwt-4
+
+    Returns
+    -------
+    filename for datafile, filename for json file
+    """
+    if ('U19Data' in filename):
+        filename = filename.replace('U19Data','derivatives')
+    folders = filename.rsplit('/', 1)
+    new = folders[0] + '/' + derivative + '/' + folders[1].split('.')[0] + '_' + derivative + '.' + folders[1].split('.')[1]
+    new_json = new.rsplit('.', 1)[0] + '.json'
+    return new, new_json
+
 def get_package_data(path):
     """
     Finds the path to the packaged data
@@ -81,6 +101,25 @@ def open_h5py_file(file, fs):
         mwt_chan = f_chan[datakeys[0]]
         mwt_chan = mwt_chan[:].squeeze()
     return mwt_chan
+
+def save_h5py_file(data, col_name, filename='new_file'):
+    """
+    Creates h5py file with data to store
+
+    Parameters
+    ----------
+    data: the data to be saved.
+    col_name: the kind of data to be saved
+    filename: the filename in local storage
+
+    Returns
+    -------
+    filename of local storage
+    """
+    file = h5py.File(filename, 'w')
+    file.create_dataset(col_name, data=data)
+    file.close()
+    return filename
 
 def batch_process(func, params, client, upload_mods=[]):
     """ 
