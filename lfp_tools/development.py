@@ -56,7 +56,12 @@ def get_filenames(fs, session_id, subject, datatype, params=[]):
                          '/sub-' + subject + '_sess-' + session_id + '_chan-' + ch +\
                          file_loc['ephys'][1])
     elif (datatype == 'derivative'):
-        print('To do, no derivates yet')
+        chans = file_loc['chan']
+        chans = [c for c in chans if c not in analysis.get_bad_channels(subject, session_id)]
+        for ch in chans:
+            files.append(file_loc['der_loc'] + '/sess-' + session_id + '/' + file_loc['ephys'][0] +\
+                         '/' + '/'.join(params) + '/sub-' + subject + '_sess-' + session_id + '_chan-' + ch +\
+                         '_' + '_'.join(params) + file_loc['ephys'][1])
     else:
         print('Wrong datatype, please input \'behavior\', \'eye\', \'raw\', or \'derivative\'')
     
