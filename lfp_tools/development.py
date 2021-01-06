@@ -1,4 +1,5 @@
 from lfp_tools import general
+from lfp_tools import analysis
 import configparser
 import os.path as op
 import s3fs
@@ -41,11 +42,15 @@ def get_filenames(fs, session_id, subject, datatype, params=[]):
         chans = file_loc['chan']
         if (not params):
             chans = [c for c in chans if not 'GR' in c]
+            chans = [c for c in chans if c not in analysis.get_bad_channels(subject, session_id)]
         elif (params[0]=='GR'):
             chans = [c for c in chans if 'GR' in c]
-        else:
-            print('Parameters need to be \'[GR]\' if intended')
+        elif (params[0]=='all'):
             chans = [c for c in chans if not 'GR' in c]
+        else:
+            print('Parameters need to be [\'GR\'] or [\'all\'] if intended')
+            chans = [c for c in chans if not 'GR' in c]
+            chans = [c for c in chans if c not in analysis.get_bad_channels(subject, session_id)]
         for ch in chans:
             files.append(file_loc['raw_loc'] + '/sess-' + session_id + '/' + file_loc['ephys'][0] +\
                          '/sub-' + subject + '_sess-' + session_id + '_chan-' + ch +\
