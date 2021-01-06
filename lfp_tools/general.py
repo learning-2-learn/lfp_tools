@@ -41,28 +41,35 @@ def get_package_data(path):
     _ROOT = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(_ROOT, 'data', path)
 
-def save_json_file(data, filename, overwrite=False):
+def save_json_file(data, filename, overwrite=False, local=False):
     """
     Creates json file from dictionary.
     json files are stored in lfp_tools/data
 
     Parameters
     ----------
-    data: the data to be stored
-    filename: the filename in local storage
+    data : the data to be stored
+    filename : the filename in local storage
+    overwrite : Flag to tell whether to overwrite existing file (if exists)
+    local : Flag to tell whether to save json file locally or in packaged data
 
     Returns
     -------
     filename of local storage
     """
-    if (os.path.exists(get_package_data(filename)) and overwrite):
+    if (local):
+        filename = filename
+    else:
+        filename = get_package_data(filename)
+        
+    if (os.path.exists(filename) and overwrite):
         print('Overwriting...')
-    elif (os.path.exists(get_package_data(filename)) and not overwrite):
+    elif (os.path.exists(filename) and not overwrite):
         print('File already exists, set overwrite to True')
-        return get_package_data(filename)
-    with open(get_package_data(filename), 'w') as ff:
+        return filename
+    with open(filename, 'w') as ff:
         json.dump(data, ff)
-    return get_package_data(filename)
+    return filename
 
 def load_json_file(filename):
     """
