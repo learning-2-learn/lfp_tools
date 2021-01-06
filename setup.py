@@ -14,6 +14,7 @@ setup(
     url="https://github.com/learning-2-learn/lfp_tools",
     packages=find_packages(),
     package_data={'lfp_tools': glob('lfp_tools/data/*')},
+    include_package_data=True,
     classifiers=[
         "Programming language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
