@@ -6,6 +6,29 @@ import numpy as np
 
 from lfp_tools import development
 
+from dask_gateway import Gateway
+
+def start_cluster(n_workers=10):
+    """
+    Starts a dask cluster
+    
+    Parameters
+    ----------
+    n_workers : the number of workers you want to start the cluster with
+    
+    Returns
+    -------
+    cluster : the cluster itself
+    client : the client to the cluster
+    """
+    gateway = Gateway()
+    options = gateway.cluster_options()
+    cluster = gateway.new_cluster(options)
+    client = cluster.get_client()
+    cluster.scale(n_workers)
+    return(cluster, client)
+    
+
 def get_session_ids(all_ids=False):
     '''
     Finds and returns all of the possible session ids.
