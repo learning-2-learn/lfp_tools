@@ -145,7 +145,7 @@ def get_behavior(fs, sess_id, sub):
     ----------------
     df: dataframe of behavior
     """
-    file_beh = development.get_filenames(fs, sess_id, sub, 'behavior')
+    file_beh = get_filenames(fs, sess_id, sub, 'behavior')
     if (file_beh):
         file_beh = file_beh[0]
     else:
@@ -185,7 +185,7 @@ def get_eye_data(fs, sess_id, sub, sample=True):
     eye[1]: horizontal displacement
     eye[2]: vertical displacement
     """
-    file_eye = development.get_filenames(fs, sess_id, sub, 'eye')
+    file_eye = get_filenames(fs, sess_id, sub, 'eye')
     if (not file_eye):
         return (file_eye, file_eye, file_eye)
     
