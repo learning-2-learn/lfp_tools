@@ -4,6 +4,24 @@ import pandas as pd
 import scipy.signal as ss
 
 
+def moving_average_dim(ar, size, dim):
+    """
+    Calculates the moving average along dimension
+    
+    Parameters
+    --------------
+    ar: array to be averaged
+    size: size of window
+    dim: dimension to calculate over
+    
+    Returns
+    --------------
+    Moving average along dim
+    """
+    br = np.apply_along_axis(_moving_average, dim, ar, size)
+    return(br)
+
+
 def butter_pass_filter(data, cutoff, fs, btype, order=5):
     """ 
     Butter pass filters a signal with a butter filter
@@ -158,3 +176,22 @@ def _butter_pass(cutoff, fs, btype, order=5):
     normal_cutoff = cutoff / nyq
     b, a = ss.butter(order, normal_cutoff, btype=btype, analog=False)
     return b, a
+
+def _moving_average(a, n):
+    """
+    Calculates the moving average of an array.
+    Function taken from Jaime here:
+    https://stackoverflow.com/questions/14313510/how-to-calculate-moving-average-using-numpy
+    
+    Parameters
+    --------------
+    a: array to be averaged
+    n: size of window
+    
+    Returns
+    --------------
+    Moving average
+    """
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
