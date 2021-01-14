@@ -6,18 +6,19 @@ import scipy.signal as ss
 
 def butter_pass_filter(data, cutoff, fs, btype, order=5):
     """ 
-    High pass filters a signal with a butter filter
+    Butter pass filters a signal with a butter filter
     
     Parameters
     ----------
     data: the signal to filter
     cutoff: the cutoff frequency
     fs: sampling rate
+    btype: either \'high\' or \'low\', determines low pass or high pass filter
     order: the order of the filter
         
     Returns
     -------
-    Highpass filtered data
+    Either high or low pass filtered data
     """
     b, a = _butter_pass(cutoff, fs, btype, order=order)
     y = ss.filtfilt(b, a, data)
@@ -140,17 +141,18 @@ def get_bad_channels(subject, session):
     
 def _butter_pass(cutoff, fs, btype, order=5):
     """ 
-    Builds a butter highpass filter
+    Builds a butter pass filter
     
     Parameters
     ----------
     cutoff: the cutoff frequency
     fs: sampling rate
+    btype: either \'high\' or \'low\', determines low pass or high pass filter
     order: the order of the filter
         
     Returns
     -------
-    Highpass filtered
+    Either high or low pass filtered
     """
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
