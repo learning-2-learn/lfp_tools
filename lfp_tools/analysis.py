@@ -1,6 +1,27 @@
 from lfp_tools import general
 import numpy as np
 import pandas as pd
+import scipy.signal as ss
+
+
+def butter_pass_filter(data, cutoff, fs, btype, order=5):
+    """ 
+    High pass filters a signal with a butter filter
+    
+    Parameters
+    ----------
+    data: the signal to filter
+    cutoff: the cutoff frequency
+    fs: sampling rate
+    order: the order of the filter
+        
+    Returns
+    -------
+    Highpass filtered data
+    """
+    b, a = _butter_pass(cutoff, fs, btype, order=order)
+    y = ss.filtfilt(b, a, data)
+    return y
 
 def get_psd(lfp, sr):
     """
@@ -113,3 +134,25 @@ def get_bad_channels(subject, session):
     else:
         print('Either bad channels haven\'t been identified or incorrect subject/session')
         return ([])
+    
+    
+    #Helper functions
+    
+def _butter_pass(cutoff, fs, btype, order=5):
+    """ 
+    Builds a butter highpass filter
+    
+    Parameters
+    ----------
+    cutoff: the cutoff frequency
+    fs: sampling rate
+    order: the order of the filter
+        
+    Returns
+    -------
+    Highpass filtered
+    """
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = ss.butter(order, normal_cutoff, btype=btype, analog=False)
+    return b, a
