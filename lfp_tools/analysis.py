@@ -1,8 +1,83 @@
 from lfp_tools import general
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import scipy.signal as ss
+from matplotlib.widgets import Slider
 
+
+def plot_slider(sigs, vlines=[], num_sigs=10, offset=['auto', 0], xrange=['auto', 0]):
+    """
+    Plots multiple signals with sliding window.
+    Don't forget to use the command "%matplotlib notebook" first!
+    Doesn't work in python lab. Switch to tree and try again
+    
+    Parameters
+    ----------
+    sigs : array (or list) of arrays to plot
+    vlines : list of black, vertical lines to plot
+    num_sigs : number of arrays to show in the screen at any one time
+    offset : list of two objects. First (string) describes how to correct offset by second (number) object:
+        'auto' automatically finds offset
+        'rel' allows user to adjust automatic offset by multiplicative factor (second arg)
+        'abs' allows user to set absolute offset (second arg)
+    xrange : list of two objects. First (string) describes how to correct xrange by second (number) object:
+        'auto' automatically finds xrange
+        'rel' allows user to adjust automatic xrange by multiplicative factor (second arg)
+        'abs' allows user to set absolute xrange (second arg)
+    """
+    fig, ax = plt.subplots()
+    plt.subplots_adjust(bottom=0.25)
+
+    minRange = 0
+    if (xrange[0]=='auto'):
+        maxRange = int(len(sigs[0]) / 100)
+    elif (xrange[0]=='abs'):
+        maxRange = xrange[1]
+    elif (xrange[0]=='rel'):
+        maxRange = int(len(sigs[0]) / 100) * xrange[1]
+    else:
+        print('Incorrect xrange args')
+        maxRange = int(len(sigs[0]) / 100)
+        
+    if (offset[0]=='auto'):
+        offset = 2 * np.std(sigs)
+    elif (offset[0]=='rel'):
+        offset = 2 * np.std(sigs) * offset[1]
+    elif (offset[0]=='abs'):
+        offset = offset[1]
+    else:
+        print('Incorrect offset args')
+        offset = 2 * np.std(sigs)
+        
+    numPlots = len(sigs)
+
+    plt.yticks([], [])
+
+    for i in range(numPlots):
+        plt.plot(np.arange(len(sigs[i])), sigs[i] + offset*i)
+    for v in vlines:
+        plt.axvline(v, color='k')
+
+    plt.axis([minRange, maxRange, -offset, (num_sigs-1)*offset])
+
+    aypos = plt.axes([0.01, 0.25, 0.03, 0.60])
+    axpos = plt.axes([0.22, 0.1, 0.6, 0.04])
+
+    yspos = Slider(aypos, 'Y', -offset, (numPlots-1)*offset, orientation='vertical')
+    xspos = Slider(axpos, 'X', 0, len(sigs[0]) - maxRange, orientation='horizontal')
+
+    def update(val):
+        ypos = yspos.val
+        xpos = xspos.val
+        ax.axis([xpos,xpos + maxRange - minRange,ypos,ypos+num_sigs*offset])
+        fig.canvas.draw_idle()
+
+    yspos.on_changed(update)
+    xspos.on_changed(update)
+
+    plt.show()
+    return(xspos, yspos)
 
 def moving_average_dim(ar, size, dim):
     """
