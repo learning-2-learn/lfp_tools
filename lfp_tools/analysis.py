@@ -6,6 +6,64 @@ import scipy.signal as ss
 from matplotlib.widgets import Slider
 
 
+def get_reordered_idx(df, i_type, params=[]):
+    """
+    Finds idx orderings and trial changes for ordering trials in unique way.
+    \'rule\' organizes by rule, in order of appearance
+    \'rule_basic\' just gives trial changes for rules (doesn't reorganize)
+    \'feedback\' organizes by whether the subject was correct or not, in order of appearance
+    \'feedback_rule' organizes by both rule and feedback, in order
+    \'time_learned' organizes by what relative trial it is
+    
+    Parameters
+    --------------
+    
+    df : dataframe describing behavior
+    i_type : the control, specified above
+    
+    Returns
+    --------------
+    idx : indicies for reorganizing trials
+    hlines : the trial number for segregating reorganization. E.g. separating each rule
+    
+    """
+    idx = []
+    hlines = []
+    if (i_type == 'feedback'):
+        for i in [200,206]:
+            idx.append(np.argwhere(df[df['act']=='fb'].response.values==i)[:,0])
+            hlines.append(len(np.hstack(idx)) - 0.5)
+        idx = np.hstack(idx)
+    elif (i_type == 'rule'):
+        for i in range(12):
+            idx.append(np.argwhere(df[df['act']=='fb'].rule.values==i)[:,0])
+            hlines.append(len(np.hstack(idx)) - 0.5)
+        idx = np.hstack(idx)
+    elif (i_type == 'rule_basic'):
+        idx = np.arange(len(df[df['act']=='fb']))
+        hlines = np.argwhere(df[(df['act']=='fb')].trialRel.values==0)[1:,0] - 0.5
+    elif (i_type == 'feedback_rule'):
+        for j in [200,206]:
+            for i in range(12):
+                idx.append(np.argwhere((df[df['act']=='fb'].rule.values==i) & (df[df['act']=='fb'].response.values==j))[:,0])
+                hlines.append(len(np.hstack(idx)) - 0.5)
+            hlines.append(hlines[-1])
+        idx = np.hstack(idx)
+    elif (i_type == 'time_learned'):
+        if (params!=[]):
+            numTrials = params[0]
+        else:
+            numTrials = np.max(df[df['act']=='fb'].trialRel.values)
+        for i in range(numTrials):
+            idx.append(np.argwhere(df[df['act']=='fb'].trialRel.values==i)[:,0])
+            hlines.append(len(np.hstack(idx)) - 0.5)
+        idx = np.hstack(idx)
+    else:
+        print('Type not found, please use one of the following:\n \
+        \'rule\', \'rule_basic\', \'feedback\', \'feedback_rule\', \'time_learned\'')
+        return([],[])
+    return(idx, np.array(hlines)[:-1])
+
 def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hlines=[]):
     """
     Possibility of adding more features...
