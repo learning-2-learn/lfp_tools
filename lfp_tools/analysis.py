@@ -6,7 +6,7 @@ import scipy.signal as ss
 from matplotlib.widgets import Slider
 
 
-def plot_slider(sigs, vlines=[], num_sigs=10, offset=['auto', 0], xrange=['auto', 0]):
+def plot_slider(sigs, vlines=[], markers=[], num_sigs=10, offset=['auto', 0], xrange=['auto', 0]):
     """
     Plots multiple signals with sliding window.
     Don't forget to use the command "%matplotlib notebook" first!
@@ -16,6 +16,8 @@ def plot_slider(sigs, vlines=[], num_sigs=10, offset=['auto', 0], xrange=['auto'
     ----------
     sigs : array (or list) of arrays to plot
     vlines : list of black, vertical lines to plot
+    markers : list of specific vertical lines to plot per signal
+        Should be of shape (len(sigs), any number, 4), where the last argument gives idx, color, marker, marker_size
     num_sigs : number of arrays to show in the screen at any one time
     offset : list of two objects. First (string) describes how to correct offset by second (number) object:
         'auto' automatically finds offset
@@ -56,6 +58,10 @@ def plot_slider(sigs, vlines=[], num_sigs=10, offset=['auto', 0], xrange=['auto'
 
     for i in range(numPlots):
         plt.plot(np.arange(len(sigs[i])), sigs[i] + offset*i)
+        if (markers != []):
+            for m in markers[i]:
+                plt.plot(m[0], offset*i, color=m[1], marker=m[2], markersize = m[3])
+        
     for v in vlines:
         plt.axvline(v, color='k')
 
