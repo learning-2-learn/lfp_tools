@@ -6,6 +6,45 @@ import scipy.signal as ss
 from matplotlib.widgets import Slider
 
 
+def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hlines=[]):
+    """
+    Possibility of adding more features...
+    
+    Plots a grid of 2 dimensional plots with imshow
+    
+    Parameters
+    ----------
+    plots : list of plots, must be of length greater than gridsize
+    grid : (num_vertical, num_horizontal), number of plots in grid in each direction
+    titles : list of titles for plots in same order as plots
+    xrange : (min_x, max_x)
+    yrange : (min_y, max_y)
+    vlines : list of vertical lines to include
+    hlines : list of horizontal lines to include
+    """
+    maxi=grid[0]
+    maxj=grid[1]
+    if(xrange==[]):
+        xrange=[0, plots[0].shape[1]]
+    if(yrange==[]):
+        yrange=[0, plots[0].shape[0]]
+    
+    fig, ax = plt.subplots(maxi,maxj,figsize=(14,7),sharex=True, sharey=True)
+    fig.tight_layout(pad=1)
+    
+    for i in range(maxi):
+        for j in range(maxj):
+            ax[i,j].imshow(plots[j + i*maxj],
+                        aspect='auto',
+                        vmin=0,
+                        extent=[xrange[0], xrange[1], yrange[1], yrange[0]])
+            if (titles!=[]):
+                ax[i,j].set_title(titles[j + i*maxj])
+            for line in hlines:
+                ax[i,j].axhline(line, color='black', ls='-', lw=0.7)
+            for line in vlines:
+                ax[i,j].axvline(line, color='black', ls='-', lw=0.7)
+
 def plot_slider(sigs, vlines=[], markers=[], num_sigs=10, offset=['auto', 0], xrange=['auto', 0]):
     """
     Plots multiple signals with sliding window.
