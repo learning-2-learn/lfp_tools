@@ -220,24 +220,31 @@ def butter_pass_filter(data, cutoff, fs, btype, order=5):
     y = ss.filtfilt(b, a, data)
     return y
 
-def get_psd(lfp, sr):
+def get_psd(lfp, sr, params=[4096], method='welch'):
     """
-    Finds the psd for the lfp data. Uses fft.
+    Finds the psd for the lfp data.
     Double check for correctness.
     
     Parameters
     ---------------
     lfp: signal to fft
     sr: sampling rate
+    method: 'welch', 'fft', how the psd is calculated
     
     Returns
     ---------------
     freq: the frequencies associated with the power
     power: the power at each frequency
     """
-    power = np.abs(np.fft.fft(lfp))
-    power = power[:int(len(power)/2)]
-    freq = np.arange(len(power)) * sr / (2 * len(power))
+    if(method=='welch'):
+        freq, power = ss.welch(lfp, fs = sr, nperseg = params[0])
+    elif(method=='fft'):
+        power = np.abs(np.fft.fft(lfp))
+        power = power[:int(len(power)/2)]
+        freq = np.arange(len(power)) * sr / (2 * len(power))
+    else:
+        print('Wrong method, defaulting to \'welch\'')
+        freq, power = get_psd(lfp, sr, params=[4096], method='welch')
     return(freq, power)
 
 def time_Slicer(ar, timePoints, timeLength):
