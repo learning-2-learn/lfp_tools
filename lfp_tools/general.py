@@ -195,6 +195,7 @@ def merge_json_dicts(master_file, branch_file, remove_duplicates=True):
     """
     Merges two json dictionaries, and discard branch_file
     json files are stored in lfp_tools/data
+    Assumes merging across lists, arrays, or dictionaries
     
     Parameters
     ----------------
@@ -218,7 +219,10 @@ def merge_json_dicts(master_file, branch_file, remove_duplicates=True):
     branch_keys = list(branch_dict.keys())
     for b in branch_keys:
         if (b in master_keys):
-            master_dict[b] = list(np.unique(np.hstack(master_dict[b] + branch_dict[b])))
+            if (isinstance(master_dict[b], dict)):
+                master_dict[b].update(branch_dict[b])
+            else:
+                master_dict[b] = list(np.unique(np.hstack(master_dict[b] + branch_dict[b])))
         else:
             master_dict[b] = branch_dict[b]
     save_json_file(master_dict, master_file, True)
