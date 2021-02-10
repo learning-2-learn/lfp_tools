@@ -23,5 +23,5 @@ setup(
         "Topic :: Scientific/Engineering"
     ],
     python_requires='>=3.8',
-    install_requires=["numpy==1.19.3", "pandas", "aiobotocore>=1.0.1", "h5py", "s3fs", "tqdm", "dask", "dask_gateway"]
+    install_requires=["numpy==1.19.3", "matplotlib", "pandas", "aiobotocore>=1.0.1", "h5py", "s3fs", "tqdm", "dask", "dask_gateway"]
 )
