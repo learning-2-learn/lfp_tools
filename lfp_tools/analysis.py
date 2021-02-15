@@ -6,6 +6,28 @@ import scipy.signal as ss
 from matplotlib.widgets import Slider
 
 
+def reorder_chans(chans):
+    '''
+    Takes a list of channels and reorders them by number and drive.
+    Specifically, it returns the idx to reorder channels
+    
+    Parameters
+    ----------
+    chans : list or array of channel names. Names must be strings of integers or integers with 'a' on the end
+    
+    Returns
+    -------
+    idx : array of indicies that sort the channels
+    '''
+    chans = np.array(chans)
+    chans_temp = np.sort([int(c) for c in chans if 'a' not in c])
+    chans_post = np.sort([int(c.split('a')[0]) for c in chans if 'a' in c])
+    chans_temp = [str(c) for c in chans_temp]
+    chans_post = [str(c) + 'a' for c in chans_post]
+    chans_sorted = chans_temp + chans_post
+    idx = np.array([list(chans).index(c) for c in chans_sorted])
+    return (idx)
+
 def get_reordered_idx(df, i_type, params=[]):
     """
     Finds idx orderings and trial changes for ordering trials in unique way.
