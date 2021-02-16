@@ -86,7 +86,7 @@ def get_reordered_idx(df, i_type, params=[]):
         return([],[])
     return(idx, np.array(hlines)[:-1])
 
-def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hlines=[]):
+def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hlines=[], saveFig=None):
     """
     Possibility of adding more features...
     
@@ -101,6 +101,7 @@ def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hli
     yrange : (min_y, max_y)
     vlines : list of vertical lines to include
     hlines : list of horizontal lines to include
+    saveFig : string of filename to save figure as. If None, does not save
     """
     maxi=grid[0]
     maxj=grid[1]
@@ -124,6 +125,9 @@ def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hli
                 ax[i,j].axhline(line, color='black', ls='-', lw=0.7)
             for line in vlines:
                 ax[i,j].axvline(line, color='black', ls='-', lw=0.7)
+    
+    if(saveFig!=None):
+        plt.saveFig(saveFig)
 
 def plot_slider(sigs, vlines=[], markers=[], num_sigs=10, offset=['auto', 0], xrange=['auto', 0]):
     """
