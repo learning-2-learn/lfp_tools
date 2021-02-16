@@ -127,7 +127,7 @@ def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hli
                 ax[i,j].axvline(line, color='black', ls='-', lw=0.7)
     
     if(saveFig!=None):
-        plt.savefig(saveFig)
+        plt.savefig(saveFig, bbox_inches = 'tight')
 
 def plot_slider(sigs, vlines=[], markers=[], num_sigs=10, offset=['auto', 0], xrange=['auto', 0]):
     """
