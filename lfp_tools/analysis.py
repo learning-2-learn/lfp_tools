@@ -56,6 +56,11 @@ def get_reordered_idx(df, i_type, params=[]):
             idx.append(np.argwhere(df[df['act']=='fb'].response.values==i)[:,0])
             hlines.append(len(np.hstack(idx)) - 0.5)
         idx = np.hstack(idx)
+    elif (i_type == 'feedback_previous'):
+        for i in [200,206]:
+            idx.append((np.argwhere(df[df['act']=='fb'].response.values==i)[:,0]+1)[:-1])
+            hlines.append(len(np.hstack(idx)) - 0.5)
+        idx = np.hstack(idx)
     elif (i_type == 'rule'):
         for i in range(12):
             idx.append(np.argwhere(df[df['act']=='fb'].rule.values==i)[:,0])
@@ -82,7 +87,7 @@ def get_reordered_idx(df, i_type, params=[]):
         idx = np.hstack(idx)
     else:
         print('Type not found, please use one of the following:\n \
-        \'rule\', \'rule_basic\', \'feedback\', \'feedback_rule\', \'time_learned\'')
+        \'rule\', \'rule_basic\', \'feedback\', \'feedback_previous\', \'feedback_rule\', \'time_learned\'')
         return([],[])
     return(idx, np.array(hlines)[:-1])
 
