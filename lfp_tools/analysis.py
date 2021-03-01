@@ -91,7 +91,7 @@ def get_reordered_idx(df, i_type, params=[]):
         return([],[])
     return(idx, np.array(hlines)[:-1])
 
-def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hlines=[], saveFig=None):
+def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hlines=[], vrange=[], saveFig=None):
     """
     Possibility of adding more features...
     
@@ -106,6 +106,7 @@ def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hli
     yrange : (min_y, max_y)
     vlines : list of vertical lines to include
     hlines : list of horizontal lines to include
+    vrange : list of vmin and vmax arguments
     saveFig : string of filename to save figure as. If None, does not save
     """
     maxi=grid[0]
@@ -114,6 +115,8 @@ def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hli
         xrange=[0, plots[0].shape[1]]
     if(yrange==[]):
         yrange=[0, plots[0].shape[0]]
+    if(vrange==[]):
+        vrange=[0, None]
     
     fig, ax = plt.subplots(maxi,maxj,figsize=(14,7),sharex=True, sharey=True)
     fig.tight_layout(pad=1)
@@ -122,7 +125,8 @@ def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hli
         for j in range(maxj):
             ax[i,j].imshow(plots[j + i*maxj],
                         aspect='auto',
-                        vmin=0,
+                        vmin=vrange[0],
+                        vmax=vrange[1],
                         extent=[xrange[0], xrange[1], yrange[1], yrange[0]])
             if (titles!=[]):
                 ax[i,j].set_title(titles[j + i*maxj])
