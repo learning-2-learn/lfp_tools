@@ -138,7 +138,7 @@ def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hli
     if(saveFig!=None):
         plt.savefig(saveFig, bbox_inches = 'tight')
 
-def plot_slider(sigs, vlines=[], markers=[], num_sigs=10, offset=['auto', 0], xrange=['auto', 0]):
+def plot_slider(sigs, vlines=[], markers=[], num_sigs=10, offset=['auto', 0], xrange=['auto', 0], colors=None):
     """
     Plots multiple signals with sliding window.
     Don't forget to use the command "%matplotlib notebook" first!
@@ -159,6 +159,7 @@ def plot_slider(sigs, vlines=[], markers=[], num_sigs=10, offset=['auto', 0], xr
         'auto' automatically finds xrange
         'rel' allows user to adjust automatic xrange by multiplicative factor (second arg)
         'abs' allows user to set absolute xrange (second arg)
+    colors : list of colors of each plot. Should be longer than number of plots
     """
     fig, ax = plt.subplots()
     plt.subplots_adjust(bottom=0.25)
@@ -189,7 +190,10 @@ def plot_slider(sigs, vlines=[], markers=[], num_sigs=10, offset=['auto', 0], xr
     plt.yticks([], [])
 
     for i in range(numPlots):
-        plt.plot(np.arange(len(sigs[i])), sigs[i] + offset*i)
+        if (colors==None):
+            plt.plot(np.arange(len(sigs[i])), sigs[i] + offset*i)
+        else:
+            plt.plot(np.arange(len(sigs[i])), sigs[i] + offset*i, color=colors[i])
         if (markers != []):
             for m in markers[i]:
                 plt.plot(m[0], offset*i, color=m[1], marker=m[2], markersize = m[3])
