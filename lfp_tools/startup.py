@@ -3,10 +3,21 @@ from lfp_tools import analysis
 from collections import Counter
 import pandas as pd
 import numpy as np
-
-from lfp_tools import development
+import s3fs
 
 from dask_gateway import Gateway
+
+def get_fs():
+    """
+    Gets the filesystem object.
+    
+    Returns
+    -------
+    fs : filesystem object
+    """
+    fs = s3fs.S3FileSystem()
+    return(fs)
+
 
 def start_cluster(n_workers=10):
     """
