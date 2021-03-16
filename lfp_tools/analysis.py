@@ -164,8 +164,7 @@ def plot_grid(function, plots, grid=(3,4), figsize=(14,7), sharex=True, sharey=T
     fig, ax = plt.subplots(maxi,maxj,figsize=figsize,sharex=sharex, sharey=sharey)
     fig.tight_layout(pad=1)
     
-    if (vline_colors==None):
-        vline_colors = []
+    if (vline_colors==[]):
         for i in range(len(vlines)):
             vline_colors.append('k')
     
