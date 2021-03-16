@@ -91,52 +91,108 @@ def get_reordered_idx(df, i_type, params=[]):
         return([],[])
     return(idx, np.array(hlines)[:-1])
 
-def plot_grid(plots, grid=(3,4), titles=[], xrange=[], yrange=[], vlines=[], hlines=[], vrange=[], saveFig=None):
+        
+def plot_grid(function, plots, grid=(3,4), figsize=(14,7), sharex=True, sharey=True, titles=[], vlines=[], vline_colors=[], hlines=[], saveFig=None, **plt_kwargs):
     """
-    Possibility of adding more features...
+    Possibility of adding more plotting functions...
     
-    Plots a grid of 2 dimensional plots with imshow
+    Plots a grid of individual plots with specified function
     
     Parameters
     ----------
+    function : can either be a string that specifies the function or a function that produces the desired plot
     plots : list of plots, must be of length greater than gridsize
     grid : (num_vertical, num_horizontal), number of plots in grid in each direction
+    figsize : (size in x direction, size in y direction)
+    sharex : boolean to tell whether to share x axis
+    sharey : boolean to tell whether to share y axis
     titles : list of titles for plots in same order as plots
-    xrange : (min_x, max_x)
-    yrange : (min_y, max_y)
     vlines : list of vertical lines to include
     hlines : list of horizontal lines to include
-    vrange : list of vmin and vmax arguments
     saveFig : string of filename to save figure as. If None, does not save
+    **plt_kwargs : arguments to be passed into the plotting function
+    
+    Functions
+    ---------
+    'imshow' : plots with matplotlib.pyplot.imshow
+        plots elements should be in the form of an input to matplotlib.pyplot.imshow
+    '_mean_and_std' : plots mean and standard deviation with matplotlib.pyplot.plot
+        plots elements should have a shape of (x, ((list of arrays), (list of arrays), ...up to four times))
+    '_mean_and_sample' : plots mean and spaghetti plot with matplotlib.pyplot.plot
+        plots elements should have a shape of (x, ((list of arrays), (list of arrays), ...up to four times))
     """
+    
+    def _imshow(pl, ax=None, **plt_kwargs):
+        if ax is None:
+            ax = plt.gca()
+        ax.imshow(pl, **plt_kwargs)
+        return(ax)
+    
+    def _mean_and_std(pl, ax=None, **plt_kwargs):
+        if ax is None:
+            ax = plt.gca()
+        color_mean = ['blue', 'red', 'green', 'yellow']
+        color_std = ['cornflowerblue', 'lightcoral', 'lawngreen', 'lightyellow']
+        x = pl[0]
+        y = pl[1]
+        for k in range(len(y)):
+            p_mean = np.mean(y[k], axis=0)
+            p_std = np.std(y[k], axis=0)
+            ax.plot(x, p_mean, color=color_mean[k])
+            ax.fill_between(x, p_mean+p_std, p_mean-p_std, color=color_std[k], alpha=0.5, **plt_kwargs)
+        return(ax)
+    
+    def _mean_and_sample(pl, ax=None, **plt_kwargs):
+        if ax is None:
+            ax = plt.gca()
+        color_mean = ['blue', 'red', 'green', 'yellow']
+        color_all = ['cornflowerblue', 'lightcoral', 'lawngreen', 'lightyellow']
+        num_spag = 30
+        x = pl[0]
+        y = pl[1]
+        for k in range(len(y)):
+            for spag in y[k][np.random.choice(np.array(len(y[k])), num_spag, replace=False)]:
+                ax.plot(x, spag, color=color_all[k], linewidth=2, alpha=0.4)
+        for k in range(len(y)):
+            p_mean = np.mean(y[k], axis=0)
+            ax.plot(x, p_mean, color=color_mean[k])
+        return(ax)
+    
     maxi=grid[0]
     maxj=grid[1]
-    if(xrange==[]):
-        xrange=[0, plots[0].shape[1]]
-    if(yrange==[]):
-        yrange=[0, plots[0].shape[0]]
-    if(vrange==[]):
-        vrange=[0, None]
     
-    fig, ax = plt.subplots(maxi,maxj,figsize=(14,7),sharex=True, sharey=True)
+    fig, ax = plt.subplots(maxi,maxj,figsize=figsize,sharex=sharex, sharey=sharey)
     fig.tight_layout(pad=1)
+    
+    if (vline_colors==None):
+        vline_colors = []
+        for i in range(len(vlines)):
+            vline_colors.append('k')
     
     for i in range(maxi):
         for j in range(maxj):
-            ax[i,j].imshow(plots[j + i*maxj],
-                        aspect='auto',
-                        vmin=vrange[0],
-                        vmax=vrange[1],
-                        extent=[xrange[0], xrange[1], yrange[1], yrange[0]])
+            if (function=='imshow'):
+                ax[i,j] = _imshow(plots[j + i*maxj], ax[i,j], **plt_kwargs)
+            elif (function=='mean_and_std'):
+                ax[i,j] = _mean_and_std(plots[j + i*maxj], ax[i,j], **plt_kwargs)
+            elif (function=='mean_and_sample'):
+                ax[i,j] = _mean_and_sample(plots[j + i*maxj], ax[i,j], **plt_kwargs)
+            elif (callable(function)):
+                ax[i,j] = function(plots[j + i*maxj], ax[i,j], **plt_kwargs)
+            else:
+                print('Bad function variable')
+                return
+            
             if (titles!=[]):
                 ax[i,j].set_title(titles[j + i*maxj])
             for line in hlines:
                 ax[i,j].axhline(line, color='black', ls='-', lw=0.7)
-            for line in vlines:
-                ax[i,j].axvline(line, color='black', ls='-', lw=0.7)
+            for line in range(len(vlines)):
+                ax[i,j].axvline(vlines[line], color=vline_colors[line], ls='-', lw=0.7)
     
     if(saveFig!=None):
         plt.savefig(saveFig, bbox_inches = 'tight')
+        
 
 def plot_slider(sigs, vlines=[], markers=[], num_sigs=10, offset=['auto', 0], xrange=['auto', 0], colors=None):
     """
