@@ -381,19 +381,21 @@ def beh_get_breaks(df, num_std=5):
     else:
         return (c)
     
-def get_chan_neighbors(chan):
+def get_chan_neighbors(chan, subject, exp):
     """
     Finds the nearest neighbor channels to a given channel.
     
     Parameters
     --------------
     chan: input channel to find neighbors
+    subject: subject selected
+    exp: experiment selected
     
     Returns
     --------------
     list of locations of nearest neighbors
     """
-    channels = general.load_json_file('channels.json')
+    channels = general.load_json_file('sub-'+subject+'_exp-'+exp+'_channels.json')
     if ('a' in chan):
         drive_chans = np.array(channels['drive_pfc'])
     else:
@@ -412,20 +414,21 @@ def get_chan_neighbors(chan):
         drive_chans[loc[0,0], loc[0,1]-1]]
     return [ch for ch in ch_nn if ch != '0' and ch != '0a']
 
-def get_bad_channels(subject, session):
+def get_bad_channels(subject, exp, session):
     """
     Finds and returns the bad channels of a given subject and session.
     
     Parameters
     ---------------
     subject: the subject's name
+    exp: the experiment selected
     session: the session id
     
     Returns
     ---------------
     List of bad channels
     """
-    bad_channels = general.load_json_file('bad_channels.json')
+    bad_channels = general.load_json_file('sub-'+subject+'_exp-'+exp+'_bad_channels.json')
     all_sessions = list(bad_channels.keys())
     if (subject + session in all_sessions):
         return (bad_channels[subject + session])

@@ -40,21 +40,25 @@ def start_cluster(n_workers=10):
     return(cluster, client)
     
     
-def get_filenames(fs, session_id, subject, datatype, params=[]):
+def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     '''
     Finds the filenames for the given session_id and parameters
     
     Parameters
     ----------------
     fs: file system object
+    subject: the selected subject
+    exp: the selected experiment
     session_id: the session identifier
+    datatype: the type of data to retrieve.
+        'behavior', 'eye', 'raw', 'derivative'
     params: list of parameters interested in, in order (e.g. lfp_30)
     
     Returns
     ----------------
     list of filenames
     '''
-    file_loc = general.load_json_file('file_locations.json')
+    file_loc = general.load_json_file('sub-'+subject+'_exp-'+exp+'_file_locations.json')
     files = []
     
     if (datatype == 'behavior'):
@@ -99,12 +103,14 @@ def get_filenames(fs, session_id, subject, datatype, params=[]):
     files = [f for f in files if fs.exists(f)]
     return(files)
 
-def get_session_ids(all_ids=False):
+def get_session_ids(subject, exp, all_ids=False):
     '''
     Finds and returns all of the possible session ids.
     
     Parameters
     -----------
+    subject : subject selected
+    exp : experiment selected
     all_ids : flag indicating whether to include all sessions or just \'good\' sessions
     
     Returns
@@ -112,18 +118,20 @@ def get_session_ids(all_ids=False):
     sess_ids : session ids
     '''
     if (all_ids):
-        file_loc = general.load_json_file('file_locations.json')
+        file_loc = general.load_json_file('sub-'+subject+'_exp-'+exp+'_file_locations.json')
         return(file_loc['sess'])
     else:
-        sessions = general.load_json_file('good_sessions.json')
+        sessions = general.load_json_file('sub-'+subject+'_exp-'+exp+'_good_sessions.json')
         return(sessions['SA'])
 
-def get_all_chans(params=None):
+def get_all_chans(subject, exp, params=None):
     '''
     Gets all of the channels possible for any day.
     
     Parameters
     ----------------
+    subject: subject selected
+    exp: experiment selected
     Params: If \'GR\', will return the GR channel names.
             Otherwise, will return only the channels in the regular drives
             
@@ -131,7 +139,7 @@ def get_all_chans(params=None):
     ----------------
     chans: the channel names
     '''
-    file_loc = general.load_json_file('file_locations.json')
+    file_loc = general.load_json_file('sub-'+subject+'_exp-'+exp+'_file_locations.json')
     chans = file_loc['chan']
     if (not params):
         chans = [c for c in chans if not 'GR' in c]
@@ -142,13 +150,16 @@ def get_all_chans(params=None):
         chans = [c for c in chans if not 'GR' in c]
     return(chans)
 
-def get_behavior(fs, sess_id, sub):
+def get_behavior(fs, sub, exp, sess_id):
     """
     Gets the behavior file and builds a dataframe to help analyze the data.
+    DOES NOT WORK ON ANYTHING BUT NHP-WCST
     
     Parameters
     ---------------
     fs: filesystem object
+    sub: the subject selected
+    exp: the experiment selected
     sess_id: the session to obtain the behavior file from
     sub: the subject
     
@@ -156,7 +167,7 @@ def get_behavior(fs, sess_id, sub):
     ----------------
     df: dataframe of behavior
     """
-    file_beh = get_filenames(fs, sess_id, sub, 'behavior')
+    file_beh = get_filenames(fs, sub, exp, sess_id, 'behavior')
     if (file_beh):
         file_beh = file_beh[0]
     else:
@@ -178,15 +189,16 @@ def get_behavior(fs, sess_id, sub):
     _beh_check_last_cor(df) #Check if there's incomplete groups
     return(df)
 
-def get_eye_data(fs, sess_id, sub, sample=True):
+def get_eye_data(fs, sub, exp, sess_id, sample=True):
     """
     Retrieves eye data for a given session and subject
     
     Parameters
     ---------------
     fs: filesystem object
-    sess_id: the session desired
     sub: subject performing task
+    exp: the experiment selected
+    sess_id: the session desired
     sample: if true will resample eye data to match neural data.
         Assumes 2000 Hz sampling
     
@@ -196,7 +208,7 @@ def get_eye_data(fs, sess_id, sub, sample=True):
     eye[1]: horizontal displacement
     eye[2]: vertical displacement
     """
-    file_eye = get_filenames(fs, sess_id, sub, 'eye')
+    file_eye = get_filenames(fs, sub, exp, sess_id, 'eye')
     if (not file_eye):
         return (file_eye, file_eye, file_eye)
     
