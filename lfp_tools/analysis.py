@@ -381,15 +381,15 @@ def beh_get_breaks(df, num_std=5):
     else:
         return (c)
     
-def get_chan_neighbors(chan, subject, exp):
+def get_chan_neighbors(subject, exp, chan):
     """
     Finds the nearest neighbor channels to a given channel.
     
     Parameters
     --------------
-    chan: input channel to find neighbors
     subject: subject selected
     exp: experiment selected
+    chan: input channel to find neighbors
     
     Returns
     --------------
