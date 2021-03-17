@@ -137,18 +137,20 @@ def get_all_chans(subject, exp, params=None):
             
     Returns
     ----------------
-    chans: the channel names
+    chans: the channel names sorted
     '''
     file_loc = general.load_json_file('sub-'+subject+'_exp-'+exp+'_file_locations.json')
     chans = file_loc['chan']
     if (not params):
         chans = [c for c in chans if not 'GR' in c]
+        chans = np.array(chans)[analysis.reorder_chans(chans)]
     elif (params=='GR'):
         chans = [c for c in chans if 'GR' in c]
     else:
         print('Input needs to be \'GR\' if intended')
         chans = [c for c in chans if not 'GR' in c]
-    return(chans)
+        chans = np.array(chans)[analysis.reorder_chans(chans)]
+    return(list(chans))
 
 def get_behavior(fs, sub, exp, sess_id):
     """
