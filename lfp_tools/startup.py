@@ -73,7 +73,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
         chans = file_loc['chan']
         if (not params):
             chans = [c for c in chans if not 'GR' in c]
-            chans = [c for c in chans if c not in analysis.get_bad_channels(subject, session_id)]
+            chans = [c for c in chans if c not in analysis.get_bad_channels(subject, exp, session_id)]
         elif (params[0]=='GR'):
             chans = [c for c in chans if 'GR' in c]
         elif (params[0]=='all'):
@@ -81,7 +81,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
         else:
             print('Parameters need to be [\'GR\'] or [\'all\'] if intended')
             chans = [c for c in chans if not 'GR' in c]
-            chans = [c for c in chans if c not in analysis.get_bad_channels(subject, session_id)]
+            chans = [c for c in chans if c not in analysis.get_bad_channels(subject, exp, session_id)]
         for ch in chans:
             files.append(file_loc['raw_loc'] + '/sess-' + session_id + '/' + file_loc['ephys'][0] +\
                          '/sub-' + subject + '_sess-' + session_id + '_chan-' + ch +\
@@ -89,7 +89,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     elif (datatype == 'derivative'):
         chans = file_loc['chan']
         chans = [c for c in chans if not 'GR' in c]
-        chans = [c for c in chans if c not in analysis.get_bad_channels(subject, session_id)]
+        chans = [c for c in chans if c not in analysis.get_bad_channels(subject, exp, session_id)]
         for ch in chans:
             files.append(file_loc['der_loc'] + '/sess-' + session_id + '/' + file_loc['ephys'][0] +\
                          '/' + '/'.join(params) + '/sub-' + subject + '_sess-' + session_id + '_chan-' + ch +\
