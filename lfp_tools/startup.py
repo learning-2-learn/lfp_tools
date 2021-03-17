@@ -19,6 +19,25 @@ def get_fs():
     return(fs)
 
 
+def get_bands(subject, exp, idx=0):
+    """
+    Gets the bands for a desired subject and experiment
+    
+    Parameters
+    ----------
+    subject : the selected subject
+    exp : the selected experiment
+    idx : the index of the collection of bands to observe
+    
+    Returns
+    -------
+    bands : a list of bands to use in future analysis
+    """
+    bands = general.load_json_file('sub-'+subject+'_exp-'+exp+'_bands.json')
+    bands = bands[str(idx)]
+    return(bands)
+    
+
 def start_cluster(n_workers=10):
     """
     Starts a dask cluster
