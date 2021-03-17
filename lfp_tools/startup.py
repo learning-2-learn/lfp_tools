@@ -232,15 +232,6 @@ def get_eye_data(fs, sub, exp, sess_id, sample=True):
 #import json
 #import scipy.io
 
-#def startup_fs(token="cache"):
-#    fs = gcsfs.GCSFileSystem(project='learning-2-learn-221016', token=token)
-#    return(fs)
-    
-#def startup_kernal(fs, n_workers=10):
-#    cluster, client = tools.init_cluster(n_workers=n_workers)
-#    fs = gcsfs.GCSFileSystem(project='learning-2-learn-221016', token=fs.session.credentials)
-#    return(cluster, client, fs)
-
 #def startup_general(fs):
 #    """
 #    vo is not general
