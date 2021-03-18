@@ -36,28 +36,6 @@ def get_bands(subject, exp, idx=0):
     bands = general.load_json_file('sub-'+subject+'_exp-'+exp+'_bands.json')
     bands = bands[str(idx)]
     return(bands)
-    
-
-import subprocess
-import logging
-from distributed import WorkerPlugin
-
-class PipPlugin(WorkerPlugin):
-    """
-    Install packages on a worker as it starts up.
-
-    Parameters
-    ----------
-    packages : List[str]
-        A list of packages to install with pip on startup.
-    """
-    def __init__(self, packages):
-        self.packages = packages
-
-    def setup(self, worker):
-        logger = logging.getLogger("distributed.worker")
-        subprocess.call(['python', '-m', 'pip', 'install', '--upgrade'] + self.packages)
-        logger.info("Installed %s", self.packages)
         
 
 def start_cluster(n_workers=10):
@@ -78,16 +56,7 @@ def start_cluster(n_workers=10):
     cluster = gateway.new_cluster(options)
     client = cluster.get_client()
     cluster.scale(n_workers)
-    
-    plugin = PipPlugin(['git+https://github.com/learning-2-learn/lfp_tools.git'])
-    client.register_worker_plugin(plugin)
-    
     return(cluster, client)
-
-def test(client):
-    plugin = PipPlugin(['git+https://github.com/learning-2-learn/lfp_tools.git'])
-    client.register_worker_plugin(plugin)
-    return(client)
     
     
 def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
