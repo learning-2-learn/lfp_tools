@@ -2,3 +2,6 @@
 lfp_tools/.ipynb_checkpoints/
 lfp_tools/__pycache__/
 lfp_tools/data/.ipynb_checkpoints/
+lfp_tools/tests/__pycache__/
+build/
+dist/
