@@ -7,6 +7,23 @@ import numpy as np
 
 
 
+def get_filename_by_chan(filenames, chan):
+    """
+    Finds the filename by the channel name
+    
+    Parameters
+    ----------
+    filenames : list of filenames
+    chan : channel to find
+    
+    Returns
+    -------
+    file : the filename of the file requested
+    """
+    file = [f for f in filenames if '_chan-'+chan in f][0]
+    return(file)
+
+
 def new_derivative_name(filename, derivative):
     """
     Finds the new file location name for the derivative
