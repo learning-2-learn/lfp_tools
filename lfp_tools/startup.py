@@ -70,7 +70,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     exp: the selected experiment
     session_id: the session identifier
     datatype: the type of data to retrieve.
-        'behavior', 'eye', 'raw', 'derivative'
+        'behavior', 'eye', 'chan_loc', 'raw', 'derivative'
     params: list of parameters interested in, in order (e.g. lfp_30)
     
     Returns
@@ -88,6 +88,9 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
             files.append(file_loc['raw_loc'] + '/sess-' + session_id + '/' + file_loc['eye'][0] +\
                          '/sub-' + subject + '_sess-' + session_id + file_loc['eye'][1] +\
                          eye + file_loc['eye'][2])
+    elif (datatype == 'chan_loc'):
+        files.append(file_loc['raw_loc'] + '/sess-' + session_id + '/' + file_loc['chan_loc'][0] +\
+                     '/sub-' + subject + '_sess-' + session_id + file_loc['chan_loc'][1])
     elif (datatype == 'raw'):
         chans = file_loc['chan']
         if (not params):
@@ -182,7 +185,6 @@ def get_behavior(fs, sub, exp, sess_id):
     sub: the subject selected
     exp: the experiment selected
     sess_id: the session to obtain the behavior file from
-    sub: the subject
     
     Returns
     ----------------
@@ -243,6 +245,32 @@ def get_eye_data(fs, sub, exp, sess_id, sample=True):
     
     print('Warning, no renormalization was done; still needs to be implemented')
     return(eye[0], eye[1], eye[2])
+
+def get_channel_locations(fs, sub, exp, sess_id):
+    """
+    Gets the channel locations
+    
+    Parameters
+    ---------------
+    fs: filesystem object
+    sub: the subject selected
+    exp: the experiment selected
+    sess_id: the session to obtain the behavior file from
+    
+    Returns
+    ----------------
+    cl: dataframe of channel locations. nan is used for channels with unknown locations
+    """
+    file_cl = get_filenames(fs, sub, exp, sess_id, 'chan_loc')
+    if (file_cl):
+        file_cl = file_cl[0]
+    else:
+        return (file_cl)
+    
+    with fs.open(file_cl) as f:
+        cl = pd.read_csv(f, header=None,names = ['chan','loc'])
+    
+    return(cl)
 
 
 #Unsure if used
