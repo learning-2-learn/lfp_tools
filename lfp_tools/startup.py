@@ -210,6 +210,7 @@ def get_behavior(fs, sub, exp, sess_id):
     _beh_check_act(df) #Check action column to make sure it has everything
     _beh_add_single_trial(df) #Add column that specifies weird things that occur in a group
     _beh_check_last_cor(df) #Check if there's incomplete groups
+    df = _beh_ignore(df)
     return(df)
 
 def get_eye_data(fs, sub, exp, sess_id, sample=True):
@@ -538,3 +539,17 @@ def _beh_check_last_cor(df):
         if (sum((df['badGroup'] != 0) & (df['badGroup'] != 1)) > 0):
             print('Incomplete groups exist')
             return
+        
+def _beh_ignore(df):
+    """
+    Adds a column of zeros with ones whenever something should be ignored.
+    Currently ignores:
+        Any saccade to an object with another saccade within 50 timesteps
+    """
+    df['ignore'] = np.zeros((len(df)), dtype=int)
+    time_delay = []
+    for t in np.unique(df.trial.values):
+        temp = df[(df['act'].isin(['obj_fix_break', 'obj_fix'])) & (df['trial']==t)].time.values
+        idx = df[df['time'].isin(temp[np.argwhere(temp[1:]-temp[:-1] < 50)[:,0]])].index.values
+        df.loc[idx, 'ignore']=1
+    return(df)
