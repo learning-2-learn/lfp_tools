@@ -146,7 +146,8 @@ def save_h5py_file(data, col_name, filename='new_file'):
     file.close()
     return filename
 
-def batch_process(func, params, client):
+
+def batch_process(func, params, client, mini_batch_size=None, return_futures=True):
     """ 
     Map `params` onto `func` and submit to a dask kube cluster.
     
@@ -160,30 +161,44 @@ def batch_process(func, params, client):
         Has the form [(a1, b1, c1, ...), (a2, b2, c2, ...), ...., (an, bn, cn, ...)], 
         where each tuple is the inputs to one process.
         
+    mini_batch_size : int
+        size of batches to compute at once
+        
     client : a dask Client to an initialized cluster, optional. 
         Defaults to start a new client.
     """
-    results = client.map(func, params)
+    if (mini_batch_size==None):
+        mini_batch_size = len(params)
     
-    all_done = False 
-    pbar = tqdm(total=len(params))
-    n_done = 0
-    while not all_done:
-        time.sleep(1)
-        n_done_now = sum([r.done() for r in results])
-        if n_done_now > n_done:
-            pbar.update(n_done_now - n_done)
-            n_done = n_done_now
-
-        all_done = n_done == len(params)
-    
+    pbar = tqdm(total=int(np.ceil(len(params)/mini_batch_size)))
     exceptions = {}
     outputs = {}
-    for ii, rr in enumerate(results): 
-        if rr.status == 'error':
-            exceptions[ii] = rr.exception()
-        else:
-            outputs[ii] = rr
+    
+    for i in range(int(np.ceil(len(params)/mini_batch_size))):
+        mini_done = False
+        mini_pbar = tqdm(total=mini_batch_size)
+        n_done = 0
+        
+        mini_results = client.map(func, params[i*mini_batch_size:(i+1)*mini_batch_size])
+        
+        while not mini_done:
+            time.sleep(1)
+            n_done_now = sum([r.done() for r in mini_results])
+            if n_done_now > n_done:
+                mini_pbar.update(n_done_now - n_done)
+                n_done = n_done_now
+            mini_done = n_done == mini_batch_size
+        
+        
+        for ii, rr in enumerate(mini_results): 
+            if rr.status == 'error':
+                exceptions[ii+i*mini_batch_size] = rr.exception()
+            else:
+                if return_futures:
+                    outputs[ii+i*mini_batch_size] = rr
+                else:
+                    outputs[ii+i*mini_batch_size] = rr.result()
+        pbar.update(1)
             
     return outputs, exceptions
 
