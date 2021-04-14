@@ -42,6 +42,7 @@ def get_saccades(fs, subject, exp, session, num_std=1, smooth=10, threshold_dist
     ex = analysis.moving_average_dim(ex, smooth, 0)
     ey = analysis.moving_average_dim(ey, smooth, 0)
     dist = _distance(ex, ey)
+    t_adjust = round(smooth/2)
     
     idx_sac = np.argwhere(dist > num_std * np.std(dist))[:,0]
     idx_sep = np.insert(np.argwhere(idx_sac[1:]-idx_sac[:-1] > 5)[:,0]+1, 0, 0)
@@ -54,7 +55,7 @@ def get_saccades(fs, subject, exp, session, num_std=1, smooth=10, threshold_dist
         temp = np.argmax(dist[s])
         max_sac.append(s[temp])
         sac_dist.append(np.sqrt(np.power(ex[s[-1]] - ex[s[0]], 2) + np.power(ey[s[-1]] - ey[s[0]], 2)))
-    max_sac = np.array(max_sac)
+    max_sac = np.array(max_sac) + t_adjust
     sac_dist = np.array(sac_dist)
     return(max_sac[sac_dist>threshold_dist], sac_dist[sac_dist>threshold_dist])
 
