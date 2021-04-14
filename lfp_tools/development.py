@@ -15,8 +15,7 @@ import numpy as np
 #    return(fs)
 
 
-def get_saccades(fs, subject, exp, session, num_std=1, smooth=10, threshold_dist=1):
-    #smooth must be small (no correction term for when max occurs)
+def get_saccades(fs, subject, exp, session, num_std=1, smooth=10, threshold_dist=1, sac_type='end'):
     def _eye_renormalization(ex, ey, cross_time, sac_time):
         x_mean = np.mean(ex[cross_time])
         y_mean = np.mean(ey[cross_time])
@@ -52,8 +51,13 @@ def get_saccades(fs, subject, exp, session, num_std=1, smooth=10, threshold_dist
     max_sac = []
     sac_dist = []
     for s in sac_groups:
-        temp = np.argmax(dist[s])
-        max_sac.append(s[temp])
+        if(sac_type=='end'):
+            max_sac.append(s[-1])
+        elif(sac_type=='peak'):
+            temp = np.argmax(dist[s])
+            max_sac.append(s[temp])
+        else:
+            print('sac_type bad, arguments can be \'end\', \'peak\'')
         sac_dist.append(np.sqrt(np.power(ex[s[-1]] - ex[s[0]], 2) + np.power(ey[s[-1]] - ey[s[0]], 2)))
     max_sac = np.array(max_sac) + t_adjust
     sac_dist = np.array(sac_dist)
