@@ -175,11 +175,11 @@ def batch_process(func, params, client, mini_batch_size=None, return_futures=Tru
     outputs = {}
     
     for i in range(int(np.ceil(len(params)/mini_batch_size))):
-        mini_done = False
-        mini_pbar = tqdm(total=mini_batch_size)
-        n_done = 0
-        
         mini_results = client.map(func, params[i*mini_batch_size:(i+1)*mini_batch_size])
+        
+        mini_done = False
+        mini_pbar = tqdm(total=len(mini_results))
+        n_done = 0
         
         while not mini_done:
             time.sleep(1)
@@ -187,7 +187,7 @@ def batch_process(func, params, client, mini_batch_size=None, return_futures=Tru
             if n_done_now > n_done:
                 mini_pbar.update(n_done_now - n_done)
                 n_done = n_done_now
-            mini_done = n_done == mini_batch_size
+            mini_done = n_done == len(mini_results)
         
         
         for ii, rr in enumerate(mini_results): 
