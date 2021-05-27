@@ -61,7 +61,9 @@ def start_cluster(n_workers=10):
     
 def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     '''
-    Finds the filenames for the given session_id and parameters
+    Finds the filenames for the given session_id and parameters. 
+    If 'ic-rem' is a parameter and the file does not exist but exists without 
+        'ic-rem', this function will return the non ic-removed files instead. 
     
     Parameters
     ----------------
@@ -119,9 +121,17 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     else:
         print('Wrong datatype, please input \'behavior\', \'eye\', \'raw\', or \'derivative\'')
     
-    for f in files:
-        if (not fs.exists(f)):
-            print('File doesn\'t exist: ' + f)
+    flag_no_ic = False
+    for i in range(len(files)):
+        if (not fs.exists(files[i])):
+            f_no_ic = ''.join(''.join(files[i].split('/ic-rem')).split('_ic-rem'))
+            if (fs.exists(f_no_ic)):
+                flag_no_ic = True
+                files[i] = f_no_ic
+            else:
+                print('File doesn\'t exist: ' + files[i])
+    if (flag_no_ic):
+        print('Some or all files do not have ic components removed, using non-ic removed files...')
     files = [f for f in files if fs.exists(f)]
     return(files)
 
