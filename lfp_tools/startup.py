@@ -120,7 +120,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
                          '_' + '_'.join(params) + file_loc['ephys'][1])
     else:
         print('Wrong datatype, please input \'behavior\', \'eye\', \'raw\', or \'derivative\'')
-    
+            
     flag_no_ic = False
     for i in range(len(files)):
         if (not fs.exists(files[i])):
@@ -130,9 +130,9 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
                 files[i] = f_no_ic
             else:
                 print('File doesn\'t exist: ' + files[i])
+                del files[i]
     if (flag_no_ic):
         print('Some or all files do not have ic components removed, using non-ic removed files...')
-    files = [f for f in files if fs.exists(f)]
     return(files)
 
 def get_session_ids(subject, exp, all_ids=False):
