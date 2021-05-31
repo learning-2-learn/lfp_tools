@@ -125,14 +125,11 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     for i in range(len(files)):
         if (not fs.exists(files[i])):
             f_no_ic = ''.join(''.join(files[i].split('/ic-rem')).split('_ic-rem'))
-            if (fs.exists(f_no_ic)):
-                flag_no_ic = True
-                files[i] = f_no_ic
-            else:
-                print('File doesn\'t exist: ' + files[i])
-                del files[i]
+            files[i] = f_no_ic
+            flag_no_ic = True
     if (flag_no_ic):
-        print('Some or all files do not have ic components removed, using non-ic removed files...')
+        print('Some or all files do not have ic components removed, trying non-ic removed files...')
+    files = [f for f in files if fs.exists(f)]
     return(files)
 
 def get_session_ids(subject, exp, all_ids=False):
