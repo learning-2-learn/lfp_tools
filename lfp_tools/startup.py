@@ -121,41 +121,36 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
                          '_' + '_'.join(params) + file_loc['ephys'][1])
     else:
         print('Wrong datatype, please input \'behavior\', \'eye\', \'raw\', or \'derivative\'')
-        
-    files_1 = [f for f in files if 'a' in f.split('_chan-')[1].split('_')[0].split('.')[0]]
-    files_2 = [f for f in files if 'a' not in f.split('_chan-')[1].split('_')[0].split('.')[0]]
-    for i in range(len(files_1)):
-        if (not fs.exists(files_1[i])):
-            f_no_ic = ''.join(''.join(files_1[i].split('/ic-rem')).split('_ic-rem'))
-            if (fs.exists(f_no_ic)):
-                print('Files in Frontal drive do not have ic components removed, trying non-ic removed files...')
-                files_1 = [''.join(''.join(f.split('/ic-rem')).split('_ic-rem')) for f in files_1]
-                files_1 = [f for f in files_1 if fs.exists(f)]
-                break
-            else:
-                del files_1[i]
-    for i in range(len(files_2)):
-        if (not fs.exists(files_2[i])):
-            f_no_ic = ''.join(''.join(files_2[i].split('/ic-rem')).split('_ic-rem'))
-            if (fs.exists(f_no_ic)):
-                print('Files in Temporal drive do not have ic components removed, trying non-ic removed files...')
-                files_2 = [''.join(''.join(f.split('/ic-rem')).split('_ic-rem')) for f in files_2]
-                files_2 = [f for f in files_2 if fs.exists(f)]
-                break
-            else:
-                del files_2[i]
-    files = files_2 + files_1
-                
-            
-    #flag_no_ic = False
-    #for i in range(len(files)):
-    #    if (not fs.exists(files[i])):
-    #        f_no_ic = ''.join(''.join(files[i].split('/ic-rem')).split('_ic-rem'))
-    #        files[i] = f_no_ic
-    #        flag_no_ic = True
-    #if (flag_no_ic):
-    #    print('Some or all files do not have ic components removed, trying non-ic removed files...')
-    #files = [f for f in files if fs.exists(f)]
+     
+    if (datatype == 'raw' or datatype == 'derivative'):
+        files_1 = [f for f in files if 'a' in f.split('_chan-')[1].split('_')[0].split('.')[0]]
+        files_2 = [f for f in files if 'a' not in f.split('_chan-')[1].split('_')[0].split('.')[0]]
+        for i in range(len(files_1)):
+            if (not fs.exists(files_1[i])):
+                f_no_ic = ''.join(''.join(files_1[i].split('/ic-rem')).split('_ic-rem'))
+                if (fs.exists(f_no_ic)):
+                    print('Files in Frontal drive do not have ic components removed, trying non-ic removed files...')
+                    files_1 = [''.join(''.join(f.split('/ic-rem')).split('_ic-rem')) for f in files_1]
+                    files_1 = [f for f in files_1 if fs.exists(f)]
+                    break
+                else:
+                    del files_1[i]
+        for i in range(len(files_2)):
+            if (not fs.exists(files_2[i])):
+                f_no_ic = ''.join(''.join(files_2[i].split('/ic-rem')).split('_ic-rem'))
+                if (fs.exists(f_no_ic)):
+                    print('Files in Temporal drive do not have ic components removed, trying non-ic removed files...')
+                    files_2 = [''.join(''.join(f.split('/ic-rem')).split('_ic-rem')) for f in files_2]
+                    files_2 = [f for f in files_2 if fs.exists(f)]
+                    break
+                else:
+                    del files_2[i]
+        files = files_2 + files_1
+    else:
+        for i in range(len(files)):
+            if (not fs.exists(files[i])):
+                print('File doesn\'t exist: ' + files[i])
+        files = [f for f in files if fs.exists(f)]
     return(files)
 
 def get_session_ids(subject, exp, all_ids=False):
