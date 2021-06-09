@@ -125,6 +125,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     if (datatype == 'raw' or datatype == 'derivative'):
         files_1 = [f for f in files if 'a' in f.split('_chan-')[1].split('_')[0].split('.')[0]]
         files_2 = [f for f in files if 'a' not in f.split('_chan-')[1].split('_')[0].split('.')[0]]
+        bad_idx = []
         for i in range(len(files_1)):
             if (not fs.exists(files_1[i])):
                 f_no_ic = ''.join(''.join(files_1[i].split('/ic-rem')).split('_ic-rem'))
@@ -134,7 +135,9 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
                     files_1 = [f for f in files_1 if fs.exists(f)]
                     break
                 else:
-                    del files_1[i]
+                    bad_idx.append(i)
+        files_1 = [files_1[i] for i in range(len(files_1)) if i not in bad_idx]
+        bad_idx = []
         for i in range(len(files_2)):
             if (not fs.exists(files_2[i])):
                 f_no_ic = ''.join(''.join(files_2[i].split('/ic-rem')).split('_ic-rem'))
@@ -144,7 +147,8 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
                     files_2 = [f for f in files_2 if fs.exists(f)]
                     break
                 else:
-                    del files_2[i]
+                    bad_idx.append(i)
+        files_2 = [files_2[i] for i in range(len(files_2)) if i not in bad_idx]
         files = files_2 + files_1
     else:
         for i in range(len(files)):
