@@ -84,15 +84,15 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     files = []
     
     if (datatype == 'behavior'):
-        files.append(file_loc['raw_loc'] + '/sess-' + session_id + '/' + file_loc['behavior'][0] +\
+        files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['behavior'][0] +\
                      '/sub-' + subject + '_sess-' + session_id + file_loc['behavior'][1])
     elif (datatype == 'eye'):
         for eye in file_loc['eye_type']:
-            files.append(file_loc['raw_loc'] + '/sess-' + session_id + '/' + file_loc['eye'][0] +\
+            files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['eye'][0] +\
                          '/sub-' + subject + '_sess-' + session_id + file_loc['eye'][1] +\
                          eye + file_loc['eye'][2])
     elif (datatype == 'chan_loc'):
-        files.append(file_loc['raw_loc'] + '/sess-' + session_id + '/' + file_loc['chan_loc'][0] +\
+        files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['chan_loc'][0] +\
                      '/sub-' + subject + '_sess-' + session_id + file_loc['chan_loc'][1])
     elif (datatype == 'raw'):
         chans = file_loc['chan']
@@ -108,7 +108,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
             chans = [c for c in chans if not 'GR' in c]
             chans = [c for c in chans if c not in analysis.get_bad_channels(subject, exp, session_id)]
         for ch in chans:
-            files.append(file_loc['raw_loc'] + '/sess-' + session_id + '/' + file_loc['ephys'][0] +\
+            files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['ephys'][0] +\
                          '/sub-' + subject + '_sess-' + session_id + '_chan-' + ch +\
                          file_loc['ephys'][1])
     elif (datatype == 'derivative'):
@@ -116,7 +116,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
         chans = [c for c in chans if not 'GR' in c]
         chans = [c for c in chans if c not in analysis.get_bad_channels(subject, exp, session_id)]
         for ch in chans:
-            files.append(file_loc['der_loc'] + '/sess-' + session_id + '/' + file_loc['ephys'][0] +\
+            files.append(file_loc['der_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['ephys'][0] +\
                          '/' + '/'.join(params) + '/sub-' + subject + '_sess-' + session_id + '_chan-' + ch +\
                          '_' + '_'.join(params) + file_loc['ephys'][1])
     else:
