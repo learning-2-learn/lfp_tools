@@ -15,6 +15,25 @@ import pandas as pd
 #    fs = s3fs.S3FileSystem(key=ak, secret=sk)
 #    return(fs)
 
+def get_brain_areas(fs, subject, exp, session):
+    '''
+    Gets the brain areas of all channels
+    
+    Parameters
+    ------------------------
+    fs : filesystem object
+    subject : the subject
+    exp : the experiment
+    session : the session
+    
+    Returns
+    -------------------
+    chans : pandas dataframe that includes channels and brain areas
+    '''
+    with fs.open('l2l.jbferre.scratch/sub-'+subject+'_sess-'+session+'_channellocations.csv') as f:
+        chans = pd.read_csv(f, names=['ch', 'area1', 'area2']).fillna('Unk')
+    return(chans)
+
 from sklearn.cluster import AgglomerativeClustering
 def cluster_chans_by_coords(fs, subject, exp, session, n_clusters_t, n_clusters_a, chans_spc=None):
     '''
