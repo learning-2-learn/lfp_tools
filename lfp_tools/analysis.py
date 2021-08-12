@@ -5,6 +5,95 @@ import matplotlib.pyplot as plt
 import scipy.signal as ss
 from matplotlib.widgets import Slider
 
+def get_sac_strategy_idx(sac_seq):
+    '''
+    Finds the trial indicies for specific strategy
+    ---Continually updating strategies included---
+    
+    Strategies included:
+        Ring Around the Rosie (R1 - R5 : number of saccades in ring)
+        Boomerang (B3, B5 : ABA and ABCBA specifically)
+        ABCA, etc (specific combinations)
+        O5 : other unincluded combinations to get 5
+        6 : any strategy that takes 6 or more saccades
+        
+    Parameters
+    -------------------------
+    saq_seq : list of arrays of saccade sequences
+    
+    Returns
+    -------------------------
+    strat_dict : dictionary of number of saccades for specific strategies listed above
+    '''
+    strat_dict = {'R'+str(i) : [] for i in range(1,6)}
+    strat_dict.update({'B'+str(i) : [] for i in [3,5]})
+    strat_dict['6'] = []
+    strat_dict['ABCA'] = []
+    strat_dict['BACA'] = []
+    strat_dict['ABAC'] = []
+    strat_dict['ABCAC'] = []
+    strat_dict['O5'] = []
+    
+    for i, a in enumerate(sac_seq):
+        if(len(a)==1):
+            strat_dict['R1'].append(i)
+        elif(len(a)==2 and len(np.unique(a))==len(a)):
+            strat_dict['R2'].append(i)
+        elif(len(a)==3 and len(np.unique(a))==len(a)):
+            strat_dict['R3'].append(i)
+        elif(len(a)==3 and len(np.unique(a))!=len(a)):
+            strat_dict['B3'].append(i)
+        elif(len(a)==4 and len(np.unique(a))==len(a)):
+            strat_dict['R4'].append(i)
+        elif(len(a)==4 and a[0]==a[3]):
+            strat_dict['ABCA'].append(i)
+        elif(len(a)==4 and a[1]==a[3]):
+            strat_dict['BACA'].append(i)
+        elif(len(a)==4 and a[0]==a[2]):
+            strat_dict['ABAC'].append(i)
+        elif(len(a)==5 and len(np.unique(a[:4]))==4):
+            strat_dict['R5'].append(i)
+        elif(len(a)==5 and a[0]==a[4] and a[1]==a[3]):
+            strat_dict['B5'].append(i)
+        elif(len(a)==5 and a[2]==a[4]):
+            strat_dict['ABCAC'].append(i)
+        elif(len(a)==5):
+            strat_dict['O5'].append(i)
+        elif(len(a)>=6):
+            strat_dict['6'].append(i)
+    return(strat_dict)
+
+def get_saccade_seq(df, dtype='all', length=0):
+    '''
+    Finds the sequence of saccades for all trials
+    
+    Parameters
+    ---------------------
+    df : behavior dataframe
+    dtype : all, 'last', 'first', 'middle'
+    length : if dtype is anything but all, gives the number of trials to include
+        last : last 'length'
+        first : first 'length' starting at the second trial
+        middle : all trials between 2+'length' and -'length'
+    
+    Returns
+    ---------------------
+    allSeq : list (len of trials) of arrays (len of number of saccades)
+    '''
+    allSeq = []
+    
+    if (dtype=='all'):
+        trials = np.unique(df.trial.values)
+    elif (dtype=='last'):
+        trials = np.unique(df[df['trialRelB']>=-length].trial.values)
+    elif (dtype=='first'):
+        trials = np.unique(df[(df['trialRel']>=2) & (df['trialRel']<2+length)].trial.values)
+    elif (dtype=='middle'):
+        trials = np.unique(df[(df['trialRel']>=2+length) & (df['trialRelB']<-length)].trial.values)
+    for t in trials:
+        temp = df[(df['trial']==t) & (df['act'].isin(['obj_fix_break', 'obj_fix'])) & (df['ignore']==0) & (df['badGroup']==0)].encode.values
+        allSeq.append(temp)
+    return(allSeq)
 
 def reorder_chans(chans):
     '''
