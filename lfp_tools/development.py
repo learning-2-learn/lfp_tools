@@ -15,6 +15,34 @@ import pandas as pd
 #    fs = s3fs.S3FileSystem(key=ak, secret=sk)
 #    return(fs)
 
+import matplotlib.image as mpimg
+from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
+def plot_symbols(img, loc, zoom=0.2):
+    '''
+    Places a symbol at the desired location, usually in conjecture with axvline
+    
+    Parameters
+    ------------------
+    img : string referring to type of symbol to place
+    loc : tuple with x-y position on the plot
+    '''
+    if (img=='eye'):
+        filename = 'eyeball.png'
+    elif (img=='cross'):
+        filename = 'cross.png'
+    elif (img=='fb_cor'):
+        filename = 'fb_cor.png'
+    elif (img=='fb_inc'):
+        filename = 'fb_inc.png'
+    elif (img=='fb'):
+        filename = 'fb.png'
+    elif (img=='obj'):
+        filename = 'obj.png'
+    arr_lena = mpimg.imread(general.get_package_data(filename))
+    imagebox = OffsetImage(arr_lena, zoom=zoom)
+    ab = AnnotationBbox(imagebox, loc, annotation_clip=False, frameon=False)
+    return(ab)
+
 def get_brain_areas(fs, subject, exp, session):
     '''
     Gets the brain areas of all channels
