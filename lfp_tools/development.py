@@ -17,7 +17,7 @@ import pandas as pd
 
 import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
-def plot_symbols(img, loc, zoom=0.2):
+def plot_symbols(img, loc, zoom=1):
     '''
     Places a symbol at the desired location, usually in conjecture with axvline.
     
@@ -43,18 +43,24 @@ def plot_symbols(img, loc, zoom=0.2):
     '''
     if (img=='eye'):
         filename = 'eyeball.png'
+        zoomMult = 0.09
     elif (img=='cross'):
         filename = 'cross.png'
+        zoomMult = 0.03
     elif (img=='fb_cor'):
         filename = 'fb_cor.png'
+        zoomMult = 0.03
     elif (img=='fb_inc'):
         filename = 'fb_inc.png'
+        zoomMult = 0.03
     elif (img=='fb'):
         filename = 'fb.png'
+        zoomMult = 0.03
     elif (img=='obj'):
-        filename = 'obj2.png'
+        filename = 'obj.png'
+        zoomMult = 0.03
     arr_lena = mpimg.imread(general.get_package_data(filename))
-    imagebox = OffsetImage(arr_lena, zoom=zoom)
+    imagebox = OffsetImage(arr_lena, zoom=zoom*zoomMult)
     ab = AnnotationBbox(imagebox, loc, annotation_clip=False, frameon=False)
     return(ab)
 
