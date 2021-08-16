@@ -19,12 +19,27 @@ import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
 def plot_symbols(img, loc, zoom=0.2):
     '''
-    Places a symbol at the desired location, usually in conjecture with axvline
+    Places a symbol at the desired location, usually in conjecture with axvline.
     
     Parameters
     ------------------
     img : string referring to type of symbol to place
     loc : tuple with x-y position on the plot
+    zoom : size of the symbol
+    
+    Returns
+    ------------------
+    ab : annotationbox object, to be added to axis in main code.
+    
+    Examples
+    ------------------
+    fig, ax = plt.subplots()
+
+    ax.plot(np.arange(10), np.arange(10))
+    ax.axvline(4, color='k', linestyle='dashed')
+
+    ab = development.plot_symbols('eye', (4,10))
+    ax.add_artist(ab)
     '''
     if (img=='eye'):
         filename = 'eyeball.png'
@@ -37,7 +52,7 @@ def plot_symbols(img, loc, zoom=0.2):
     elif (img=='fb'):
         filename = 'fb.png'
     elif (img=='obj'):
-        filename = 'obj.png'
+        filename = 'obj2.png'
     arr_lena = mpimg.imread(general.get_package_data(filename))
     imagebox = OffsetImage(arr_lena, zoom=zoom)
     ab = AnnotationBbox(imagebox, loc, annotation_clip=False, frameon=False)
