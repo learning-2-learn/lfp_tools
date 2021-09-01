@@ -64,6 +64,22 @@ def plot_symbols(img, loc, zoom=1):
     ab = AnnotationBbox(imagebox, loc, annotation_clip=False, frameon=False)
     return(ab)
 
+def get_russels_model(fs):
+    '''
+    Gets russels model from S3
+    
+    Parameters
+    ------------------------
+    fs : filesystem object
+    
+    Returns
+    -------------------
+    rmodel : pandas dataframe with information from russels model
+    '''
+    with fs.open('l2l.jbferre.scratch/WCST_model_data.csv') as f:
+        rmodel = pd.read_csv(f)
+    return(rmodel)
+
 def get_brain_areas(fs, subject, exp, session):
     '''
     Gets the brain areas of all channels
