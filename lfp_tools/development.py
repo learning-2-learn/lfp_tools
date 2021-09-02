@@ -64,9 +64,9 @@ def plot_symbols(img, loc, zoom=1):
     ab = AnnotationBbox(imagebox, loc, annotation_clip=False, frameon=False)
     return(ab)
 
-def get_russels_model(fs):
+def get_ruby_model(fs):
     '''
-    Gets russels model from S3
+    Gets ruby's model from S3
     
     Parameters
     ------------------------
