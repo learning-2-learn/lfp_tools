@@ -5,6 +5,35 @@ import matplotlib.pyplot as plt
 import scipy.signal as ss
 from matplotlib.widgets import Slider
 
+from mpl_toolkits.mplot3d import Axes3D
+def plot_brain_coords(x,y,z,plot_type,plot_colors):
+    '''
+    Plots the xyz coordinates of all of the electrodes with a given color scheme
+    
+    Parameters
+    --------------------
+    x : array of x coordinates
+    y : array of y coordinates
+    z : array of z coordinates
+    plot_type : type of brain plot to do. 'single' refers to a grayscale. 'multi' refers to multiple colors
+    plot_colors : if plot_type=='single', this is the amplitude of the grayscale. if plot_type=='multi', this is a list of
+        colors referring to the color of each electrode.
+        
+    Returns
+    --------------------
+    fig, ax : the figure and axis of the plotted object
+    '''
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    
+    if (plot_type=='single'):
+        ax.scatter(x, y, z, c=plot_colors, cmap='gray_r', alpha=1)
+    elif (plot_type=='multi'):
+        for c in np.unique(plot_colors):
+            idx = color==c
+            ax.scatter(x[idx], y[idx], z[idx], color=c, alpha=1)
+    return(fig, ax)
+
 def get_sac_strategy_idx(sac_seq):
     '''
     Finds the trial indicies for specific strategy
