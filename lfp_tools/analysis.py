@@ -5,6 +5,72 @@ import matplotlib.pyplot as plt
 import scipy.signal as ss
 from matplotlib.widgets import Slider
 
+def find_peaks(data, sr_new, avg_freq, sr_orig=1000, height=0.7, prominence=0.2):
+    '''
+    Finds the peaks of LFP data
+    Assumes that the data is hilbert transformed, bandpassed data
+    Assumes that for a filter on data with freq = avg(27, 37), the distance between peaks is minimum 80ms
+    Estimates the filter size based on w1f1 = w2f2, 
+        where w is the width (std) of the filter and f is the frequency
+    It also includes a downsampling correction term (1/ds)
+    
+    Paramters
+    -----------------
+    data : the data to find the peaks for. The last dimension is the time dimension
+    sr_new : sampling rate of input data
+    avg_freq : the average frequency of the band of choice
+    sr_orig : sampling rate of the original data
+    
+    Returns
+    -----------------
+    peak_times : array object matrix where the last dimension gives the peak times
+    peak_amps : array object matrix where the last dimension gives the peak amplitudes
+    '''
+    def find_peaks_(ar, height, prominence, distance):
+        temp = ss.find_peaks(ar, height=height, prominence=prominence, distance = distance)
+        peak_loc = temp[0]
+        peak_amp = temp[1]['peak_heights']
+        return(peak_loc, peak_amp)
+    
+    d0 = 80
+    dist = d0 * np.mean([27,37]) / avg_freq
+    ds = sr_orig / sr_new
+    dist_ds = dist / ds
+    
+    peaks = np.empty_like(data[...,0], dtype=object)
+    general.func_over_last_dim(data, peaks, 1, find_peaks_, height=height, prominence=prominence, distance=dist_ds)
+    
+    return(peaks)
+
+from scipy.ndimage import gaussian_filter1d
+def filt_data_gauss(data, sr_new, avg_freq, sr_orig=1000.):
+    '''
+    Filters data with a Gaussian filter.
+    Assumes that the data is hilbert transformed, bandpassed data
+    Assumes that for a filter on data with freq = avg(27, 37), the width (std) = 25 ms
+    Estimates the filter size based on w1f1 = w2f2, 
+        where w is the width (std) of the filter and f is the frequency
+    It also includes a downsampling correction term (1/ds)
+    
+    Parameters
+    -----------------
+    data : the data to filter
+    sr_new : sampling rate of data (in ms)
+    avg_freq : the average freq of the data
+    sr_orig : the original sampling frequency of the data
+    
+    Returns
+    -----------------
+    data_filt : the filtered data
+    '''
+    f0 = 25
+    std = f0 * np.mean([27,37]) / avg_freq
+    ds = sr_orig / sr_new
+    std_ds = std / ds
+    
+    data_filt = gaussian_filter1d(data, std_ds, axis=-1, mode='nearest')
+    return(data_filt)
+
 from mpl_toolkits.mplot3d import Axes3D
 def plot_brain_coords(x,y,z,plot_type,plot_colors):
     '''
@@ -30,7 +96,7 @@ def plot_brain_coords(x,y,z,plot_type,plot_colors):
         ax.scatter(x, y, z, c=plot_colors, cmap='gray_r', alpha=1)
     elif (plot_type=='multi'):
         for c in np.unique(plot_colors):
-            idx = color==c
+            idx = plot_colors==c
             ax.scatter(x[idx], y[idx], z[idx], color=c, alpha=1)
     return(fig, ax)
 

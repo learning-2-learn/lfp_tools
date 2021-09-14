@@ -6,6 +6,28 @@ import os
 import numpy as np
 
 
+def func_over_last_dim(data, data_final, num_dim, func, **kwargs):
+    '''
+    Performs arbitrary function over last dimension(s)
+    E.g. could use func = np.mean() and num_dim = 2 to take the mean over the last 2 dimensions
+    
+    Parameters
+    -----------------
+    data : the input data
+    data_final : the output data
+    num_dim : the number of dimensions that are reduced
+    func : arbitrary function to apply to the last dimension(s)
+    '''
+    if(data.shape[:len(data.shape)-num_dim] != data_final.shape):
+        print('Input shape, output shape, and num_dim aren\'\'t appropriate')
+        return
+    
+    if(len(data.shape)>1+num_dim):
+        for i in range(len(data)):
+            func_over_last_dim(data[i], data_final[i], num_dim, func, **kwargs)
+    else:
+        for i in range(len(data)):
+            data_final[i] = func(data[i], **kwargs)
 
 def get_filename_by_chan(filenames, chan):
     """
