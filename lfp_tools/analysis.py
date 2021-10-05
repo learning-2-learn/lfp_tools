@@ -477,6 +477,39 @@ def moving_average_dim(ar, size, dim):
     br = np.apply_along_axis(_moving_average, dim, ar, size)
     return(br)
 
+def moving_average_points(ar, size, points, ds):
+    '''
+    Finds where certain points end up after taking a moving average and downsampling
+    Takes same parameters as analysis.moving_average_dim()
+    points must be contained in ar
+    
+    Parameters
+    ---------------
+    ar : list or array containing points to find end location
+    size : size of moving average window
+    points : list or array of points to find location after averaging and downsampling
+    ds : how much downsampling is done on ar
+    
+    Returns
+    ---------------
+    p_final : array of points and where they end up after doing averaging and downsampling
+    '''
+    ar = np.array(ar)
+    p_final = np.empty((len(points)))
+    
+    for i, p in enumerate(points):
+        if (not np.any(p==ar)):
+            print('One or more points in points not in ar')
+            return([])
+        p_idx = np.argwhere(p==ar)[:,0]
+        points_idx = np.zeros((len(ar)), dtype=int)
+        points_idx[p] = 1
+        points_avg = moving_average_dim(points_idx, size, 0)
+        points_ds = points_avg[::ds]
+        p_final[i] = np.mean(ar[np.argwhere(points_ds != 0)[:,0]])
+    
+    return(p_final)
+
 
 def butter_pass_filter(data, cutoff, fs, btype, order=5):
     """ 
