@@ -495,6 +495,7 @@ def moving_average_points(ar, size, points, ds):
     p_final : array of points and where they end up after doing averaging and downsampling
     '''
     ar = np.array(ar)
+    ar_ds = moving_average_dim(ar, size, 0)[::ds]
     p_final = np.empty((len(points)))
     
     for i, p in enumerate(points):
@@ -506,7 +507,7 @@ def moving_average_points(ar, size, points, ds):
         points_idx[p] = 1
         points_avg = moving_average_dim(points_idx, size, 0)
         points_ds = points_avg[::ds]
-        p_final[i] = np.mean(ar[np.argwhere(points_ds != 0)[:,0]])
+        p_final[i] = np.mean(ar_ds[np.argwhere(points_ds != 0)[:,0]])
     
     return(p_final)
 
