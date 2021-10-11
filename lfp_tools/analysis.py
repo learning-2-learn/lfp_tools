@@ -5,6 +5,74 @@ import matplotlib.pyplot as plt
 import scipy.signal as ss
 from matplotlib.widgets import Slider
 
+def hist_laxis(data, n_bins, range_limits, normalized=False):
+    '''
+    Calculates histograms over the last axis only.
+    Code obtained through https://stackoverflow.com/questions/44152436/calculate-histograms-along-axis 
+    
+    Parameters
+    -------------------
+    data : n dimensional data, histogram is taken over last axis
+    n_bins : number of bins to use in histogram
+    range_limits : list or array of size 2. First element is lower range limit, second element is higher range limit
+    normalized : truth value telling whether to normalize histogram or not. Defaults to False
+    
+    Returns
+    -------------------
+    bins : edge limits of the bins
+    counts : histogram counts of data
+    '''
+    R = range_limits
+    N = data.shape[-1]
+    bins = np.linspace(R[0],R[1],n_bins+1)
+    data2D = data.reshape(-1,N)
+    idx = np.searchsorted(bins, data2D,'right')-1
+
+    bad_mask = (idx==-1) | (idx==n_bins)
+    scaled_idx = n_bins*np.arange(data2D.shape[0])[:,None] + idx
+
+    limit = n_bins*data2D.shape[0]
+    scaled_idx[bad_mask] = limit
+
+    counts = np.bincount(scaled_idx.ravel(),minlength=limit+1)[:-1]
+    counts.shape = data.shape[:-1] + (n_bins,)
+    
+    #My addition:
+    if normalized:
+        counts = counts / np.sum(counts, axis=-1)[:,None]
+        
+    return bins, counts
+
+def coherence(sig1, sig2, sr=1000, nperseg=None, axis=-1):
+    '''
+    Calculates the coherence based on welches method.
+    Uses scipy.signal.welch and scipy.signal.csd
+    
+    Parameters
+    -----------------
+    sig1 : first signal for coherence calculations
+    sig2 : second signal for coherence calculations
+    sr : sampling rate. Defaults to 1000
+    nperseg : length of each windowed segment (see scipy.signal.welch). Defaults to None
+    axis : axis of which to calculate the coherence over. Defaults to -1
+    
+    Returns
+    -----------------
+    f1 : frequencies where the coherence is calculated
+    coh : the normalized coherence value
+    phase : the phase values calculated for the coh.
+            positive values mean that sig1 leads sig2
+    '''
+    f1, psd1 = ss.welch(sig1, fs=sr, nperseg=nperseg, axis=axis)
+    f2, psd2 = ss.welch(sig2, fs=sr, nperseg=nperseg, axis=axis)
+    fc, csd  = ss.csd(sig1, sig2, fs=sr, nperseg=nperseg, axis=axis)
+    assert np.any(f1==f2) and np.any(f1==fc), 'Frequencies not the same for PSDS and CSD'
+    
+    phase = np.angle(csd)
+    coh = np.abs(csd)**2 / (psd1 * psd2)
+    
+    return(f1, coh, phase)
+
 def find_peaks(data, sr_new, avg_freq, sr_orig=1000, height=0.7, prominence=0.2):
     '''
     Finds the peaks of LFP data
