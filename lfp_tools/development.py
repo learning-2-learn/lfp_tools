@@ -16,9 +16,11 @@ import pandas as pd
 #    return(fs)
 
 
+from scipy.io import loadmat
 def get_electrode_xyz(fs, subject, exp, session, chans_spc=None):
     '''
     Clusters the channels based on their coordinates.
+    Currenty gathers from l2l.jbferre.scratch/20211013_xyz_coords
     
     Parameters
     -------------------
@@ -32,22 +34,22 @@ def get_electrode_xyz(fs, subject, exp, session, chans_spc=None):
     -------------------
     cl : pandas dataframe giving the coordinates of each electrode
     '''
-    with fs.open('l2l.jbferre.scratch/epos'+subject+session+'_post.csv') as f:
-        coords_t = pd.read_csv(f, names=['x', 'y', 'z']).fillna(0)
-    with fs.open('l2l.jbferre.scratch/epos'+subject+session+'_ant.csv') as f:
-        coords_a = pd.read_csv(f, names=['x', 'y', 'z']).fillna(0)
-    coords_a['chan'] = [str(c)+'a' for c in np.arange(1,len(coords_a)+1)]
-    coords_t['chan'] = [str(c) for c in np.arange(1,len(coords_t)+1)]
+    with fs.open('l2l.jbferre.scratch/epos_interaural_'+subject+session[2:]+'.mat') as f:
+        f_mat = loadmat(f)
+        keys = list(f_mat.keys())
+        datakeys = [i for i in keys if '__' not in i]
+        f_data = f_mat[datakeys[0]]
+        coords = pd.DataFrame(f_data, columns=['x', 'y', 'z']).fillna(0)
+    chan = np.hstack(([str(i) for i in range(1,125)], [str(i)+'a' for i in range(1,97)]))
+    coords['ch'] = chan
+    
     bad_chan = analysis.get_bad_channels(subject, exp, session)
-    coords_a = coords_a[~coords_a['chan'].isin(bad_chan)]
-    coords_t = coords_t[~coords_t['chan'].isin(bad_chan)]
+    coords = coords[~coords['ch'].isin(bad_chan)]
     
     if (chans_spc != None):
-        coords_a = coords_a[coords_a['chan'].isin(chans_spc)]
-        coords_t = coords_a[coords_a['chan'].isin(chans_spc)]
-        
-    cl = pd.concat((coords_t, coords_a), ignore_index=True)
-    return(cl)
+        coords = coords[coords['ch'].isin(chans_spc)]
+    
+    return(coords)
 
 import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
