@@ -34,7 +34,7 @@ def get_electrode_xyz(fs, subject, exp, session, chans_spc=None):
     -------------------
     cl : pandas dataframe giving the coordinates of each electrode
     '''
-    with fs.open('l2l.jbferre.scratch/epos_interaural_'+subject+session[2:]+'.mat') as f:
+    with fs.open('l2l.jbferre.scratch/20211013_xyz_coords/epos_interaural_'+subject+session[2:]+'.mat') as f:
         f_mat = loadmat(f)
         keys = list(f_mat.keys())
         datakeys = [i for i in keys if '__' not in i]
