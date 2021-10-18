@@ -5,6 +5,41 @@ import matplotlib.pyplot as plt
 import scipy.signal as ss
 from matplotlib.widgets import Slider
 
+def calculates_kmeans_error_curve(points, kmax, num_per_k=1):
+    '''
+    Finds the error curve for using kmeans
+    From https://medium.com/analytics-vidhya/how-to-determine-the-optimal-k-for-k-means-708505d204eb
+    Modified to take average of a few realizations
+    
+    Parameters
+    -----------------
+    points : the points to calculate kmeans on
+    kmax : the maximum value of k to choose for kmeans
+    num_per_k : number of realizations to try for each value of k
+    
+    Returns
+    -----------------
+    sse : mean L2 error for each k
+    '''
+    sse = []
+    for k in range(1, kmax+1):
+        curr_sse_all = []
+        for n in range(num_per_k):
+            kmeans = KMeans(n_clusters = k).fit(points)
+            centroids = kmeans.cluster_centers_
+            pred_clusters = kmeans.predict(points)
+            curr_sse = 0
+
+            # calculate square of Euclidean distance of each point from its cluster center and add to current WSS
+            for i in range(len(points)):
+                curr_center = centroids[pred_clusters[i]]
+                curr_sse += (points[i, 0] - curr_center[0]) ** 2 + (points[i, 1] - curr_center[1]) ** 2
+            
+            curr_sse_all.append(curr_sse)
+
+        sse.append(np.mean(curr_sse_all))
+    return np.array(sse)
+
 def hist_laxis(data, n_bins, range_limits, normalized=False):
     '''
     Calculates histograms over the last axis only.
