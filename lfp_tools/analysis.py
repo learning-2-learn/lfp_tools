@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import scipy.signal as ss
 from matplotlib.widgets import Slider
 
+from sklearn.cluster import KMeans
 def calculates_kmeans_error_curve(points, kmax, num_per_k=1):
     '''
     Finds the error curve for using kmeans
