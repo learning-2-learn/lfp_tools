@@ -168,6 +168,43 @@ def save_h5py_file(data, col_name, filename='new_file'):
     file.close()
     return filename
 
+def save_h5py_to_S3(fs, ar, metadata, location, name, col_name='data', local_name='temp', overwrite=False):
+    '''
+    Saves file to location in S3 in AWS
+    
+    Parameters
+    -----------------
+    fs : filesystem object
+    ar : numpy array to save as h5py file
+    metadata : dictionary to save as json file
+    location : bucket in S3 to save to. Make sure the string ends in '/'
+    name : name of file for both metadata and ar
+    col_name : type of data in ar
+        defaults to 'data'
+    local_name : name of file for temporary local storage. Necessary to change based on race conditions
+        defaults to 'temp'
+    overwrite : Condtion to overwrite data if necessary. Recommended to set to False for most cases
+        defaults to False
+    
+    Returns
+    -----------------
+    message : string dictating where the data was saved
+    '''
+    if (not overwrite):
+        assert not (fs.exists(location+name+'.mat') or fs.exists(location+name+'.json')), \
+        'File already exists, check location and name'
+    
+    local_h5py = save_h5py_file(ar, col_name, filename=local_name+'.mat')
+    local_json = save_json_file(metadata, local_name+'.json', local=True)
+    
+    fs.put(local_h5py, location+name+'.mat')
+    fs.put(local_json, location+name+'.json')
+    
+    os.remove(local_h5py)
+    os.remove(local_json)
+    
+    return('Files saved: '+location+name)
+
 
 def batch_process(func, params, client, mini_batch_size=None, return_futures=True):
     """ 
