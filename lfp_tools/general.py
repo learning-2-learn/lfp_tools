@@ -128,6 +128,23 @@ def load_json_file(filename):
         data = json.load(ff)
     return data
 
+def load_json_file_from_S3(filename, fs):
+    """
+    Loads a json_file from S3
+
+    Parameters
+    ----------
+    filename: the filename in S3
+    fs : filesytem object
+
+    Returns
+    -------
+    data: the contents of the json file
+    """
+    with fs.open(filename, 'r') as ff:
+        data = json.load(ff)
+    return data
+
 def open_h5py_file(file, fs):
     """
     Gets the h5py file from online storage. The file must include only one datafile.
