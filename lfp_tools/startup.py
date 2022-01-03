@@ -19,6 +19,30 @@ def get_fs():
     return(fs)
 
 
+def get_bad_trials(subject, exp, session):
+    """
+    Gets the bands for a desired subject and experiment
+    
+    Parameters
+    ----------
+    subject : the selected subject
+    exp : the selected experiment
+    session : the selected session
+    
+    Returns
+    -------
+    bad_trials : array of bad trials for given session
+    """
+    bad_trials_all = general.load_json_file('sub-'+subject+'_exp-'+exp+'_bad-trials.json')
+    if (np.any(session==np.array(list(bad_trials_all.keys())))):
+        bad_trials = np.sort([int(t) for t in bad_trials_all[session]])
+    else:
+        print('Bad trials for session '+session+' have not been identified, '+\
+              'please run \'20211109_fs_bad_trials.ipynb\' first')
+        bad_trials = np.array([])
+    return(bad_trials)
+
+
 def get_bands(subject, exp, idx=0):
     """
     Gets the bands for a desired subject and experiment
@@ -243,6 +267,7 @@ def get_behavior(fs, sub, exp, sess_id):
     _beh_add_single_trial(df) #Add column that specifies weird things that occur in a group
     _beh_check_last_cor(df) #Check if there's incomplete groups
     df = _beh_ignore(df)
+    df = _beh_bad_trials(df, sub, exp, sess_id)
     return(df)
 
 def get_eye_data(fs, sub, exp, sess_id, sample=True):
@@ -584,4 +609,14 @@ def _beh_ignore(df):
         temp = df[(df['act'].isin(['obj_fix_break', 'obj_fix'])) & (df['trial']==t)].time.values
         idx = df[df['time'].isin(temp[np.argwhere(temp[1:]-temp[:-1] < 50)[:,0]])].index.values
         df.loc[idx, 'ignore']=1
+    return(df)
+
+def _beh_bad_trials(df, subject, exp, session):
+    """
+    Adds column with bad trials to dataframe
+    """
+    bt = get_bad_trials(subject, exp, session)
+    df['badTrials'] = np.zeros(len(df), dtype=int)
+    idx = df[df['trial'].isin(bt)].index.values
+    df.loc[idx, 'badTrials'] = 1
     return(df)
