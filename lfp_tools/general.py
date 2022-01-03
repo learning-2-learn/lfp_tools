@@ -304,6 +304,24 @@ def get_results(log):
         print('Errors Present')
         return(results, log[1])
     
+def cancel_futures(log, client):
+    '''
+    Cancels futures created with batch_process
+    Note: works with dictionaries and arrays
+    
+    Parameters
+    ------------------
+    log : list of list (or dicts) of futures
+    client : client that created the futures
+    '''
+    for log_temp in log:
+        if type(log_temp)==dict:
+            for l in list(log_temp.values()):
+                client.cancel(l)
+        else:
+            for l in log_temp:
+                client.cancel(l)
+    
 def merge_json_dicts(master_file, branch_file, remove_duplicates=True):
     """
     Merges two json dictionaries, and discard branch_file
