@@ -848,3 +848,107 @@ def get_phi_init(phi, freq, time):
     phi_angle_init = (phi_angle - phase_diff[:,:,None,:])%(2*np.pi)
     phi_init = np.abs(phi)*np.exp(1j*phi_angle_init)
     return(phi_init)
+
+
+#############Methods for finding G/F
+
+
+def cos_dist(a,b):
+    cos_sim = np.dot(a, b)/(np.linalg.norm(a)*np.linalg.norm(b))
+    return(cos_sim)
+
+def get_reconstruction(x_true, soln, G):
+    t = np.arange(t_len_all) / 1000
+    
+    x_rec = np.zeros((soln.shape[1], soln.shape[2]))
+    for r in range(len(soln)):
+        temp = soln[r,:,:] * G[r][None,:]
+        x_rec = x_rec + temp
+
+    mse = cos_dist(x_rec.real.reshape((-1)), x_true.reshape((-1)))
+    return(mse)
+
+def grad_loss(G, x, soln, alpha_G, beta, N):
+    #G is current guess, x is true data, soln is solutions
+    #alpha promotes sparsity
+    #beta promotes smoothness over time
+    Y = np.matmul(np.transpose(soln, [2,1,0]), np.transpose(G)[:,:,None])[:,:,0] #time, chan
+    Y2 = Y - x.T
+    l2_term_G = np.matmul(np.transpose(soln, [2,0,1]), Y2[:,:,None])[:,:,0].T
+    
+    alpha_term_G = np.ones((G.shape)) * alpha_G
+    alpha_term_G[G<0] = -alpha_term_G[G<0]
+    
+    beta_term = np.zeros((G.shape))
+    for i in range(1,N+1):
+        beta_term[:,:-i] = beta_term[:,:-i] - beta*(G[:,i:]-G[:,:-i])
+        beta_term[:,i:] =  beta_term[:,i:]  + beta*(G[:,i:]-G[:,:-i])
+    
+    dloss_G = l2_term_G + alpha_term_G + beta_term
+    
+    return(dloss_G)
+        
+
+def get_G_init(soln, x, beta, N):
+    G_init = np.empty((soln.shape[0], soln.shape[-1]))
+    for r in range(soln.shape[0]):
+        for t in range(soln.shape[2]):
+            top = 2 * (soln[r,:,t] @ x[:,t])
+            bot = (2 * (soln[r,:,t] @ soln[r,:,t])) + 2*beta*N
+            G_init[r,t] = top / bot
+    return(G_init)
+
+def get_G(params):
+    x_true, freqs, phi, t_len_all, sr, offsets, alpha, beta, N, lr_G, maxiter, idx = params
+    
+    t = np.arange(t_len_all) / sr
+
+    soln = []
+    for r in range(0,freqs.shape[-1]):
+        for i in range(len(freqs)):
+            temp = np.exp(2*np.pi*1j*((t+offsets[i]) * freqs[i,r]))
+            temp2 = phi[i,:,r][:,None]*temp
+            soln.append(temp2)
+    soln = np.array(soln).real
+    soln = soln[idx]
+
+    stopiter = np.mean(soln**2)**0.5
+    G = get_G_init(soln, x_true, beta, N)
+    G[G<0]=0
+    
+    for i in range(maxiter):
+        dLdG = grad_loss(G, x_true, soln, alpha, beta, N)
+        G = G - lr_G*dLdG
+        G[G<0]=0
+            
+        if np.mean(np.abs(dLdG)) < stopiter:
+            break
+    return(soln, G)
+
+def flatten(t):
+    return [item for sublist in t for item in sublist]
+
+def find_F_exact(x, soln):
+    G = np.empty((soln.shape[0], soln.shape[2]))
+    F = np.empty((soln.shape[0], soln.shape[2]))
+    B = np.empty((soln.shape[0], soln.shape[0], soln.shape[2]))
+    for t in range(soln.shape[2]):
+        top = soln[:,:,t] @ x[:,t]
+        bot = np.empty((soln.shape[0]))
+        for r in range(soln.shape[0]):
+            bot[r] = soln[r,:,t] @ soln[r,:,t]
+            for R in range(soln.shape[0]):
+                B[R,r,t] = (soln[r,:,t] @ soln[R,:,t]) / bot[r]
+        G[:,t] = top / bot
+    return(G, B)
+
+def get_F_from_BG(B, G, variance_thresh=0.01):
+    F = np.empty(G.shape)
+    for t in range(G.shape[1]):
+        G_sub = G[:,t]
+        B_sub = B[:,:,t].T
+        u,s,vh = np.linalg.svd(B_sub)
+        idx = s**2 / (s@s) > variance_thresh
+        B_inv = vh.T[:,idx] @ np.diag(1./s[idx]) @ u.T[idx]
+        F[:,t] = B_inv @ G_sub
+    return(F)
