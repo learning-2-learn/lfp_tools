@@ -928,19 +928,12 @@ def get_G(params):
 def flatten(t):
     return [item for sublist in t for item in sublist]
 
-def find_F_exact(x, soln):
-    G = np.empty((soln.shape[0], soln.shape[2]))
-    F = np.empty((soln.shape[0], soln.shape[2]))
-    B = np.empty((soln.shape[0], soln.shape[0], soln.shape[2]))
-    for t in range(soln.shape[2]):
-        top = soln[:,:,t] @ x[:,t]
-        bot = np.empty((soln.shape[0]))
-        for r in range(soln.shape[0]):
-            bot[r] = soln[r,:,t] @ soln[r,:,t]
-            for R in range(soln.shape[0]):
-                B[R,r,t] = (soln[r,:,t] @ soln[R,:,t]) / bot[r]
-        G[:,t] = top / bot
-    return(G, B)
+def find_BG_exact(x, soln):
+    top = np.sum(soln*x[None,:,:], axis=1)
+    bot = np.sum(soln**2, axis=1)
+    G = top / bot
+    B = np.sum(soln[:,None] * soln[None,:], axis=2) / bot[:,None]
+    return(B, G)
 
 def get_F_from_BG(B, G, variance_thresh=0.01):
     F = np.empty(G.shape)
