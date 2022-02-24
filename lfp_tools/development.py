@@ -858,8 +858,6 @@ def cos_dist(a,b):
     return(cos_sim)
 
 def get_reconstruction(x_true, soln, G):
-    t = np.arange(t_len_all) / 1000
-    
     x_rec = np.zeros((soln.shape[1], soln.shape[2]))
     for r in range(len(soln)):
         temp = soln[r,:,:] * G[r][None,:]
