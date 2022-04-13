@@ -97,7 +97,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     exp: the selected experiment
     session_id: the session identifier
     datatype: the type of data to retrieve.
-        'behavior', 'eye', 'chan_loc', 'raw', 'derivative'
+        'behavior', 'object_features', 'eye', 'chan_loc', 'raw', 'derivative'
     params: list of parameters interested in, in order (e.g. lfp_30)
     
     Returns
@@ -110,6 +110,9 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     if (datatype == 'behavior'):
         files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['behavior'][0] +\
                      '/sub-' + subject + '_sess-' + session_id + file_loc['behavior'][1])
+    elif (datatype == 'object_features'):
+        files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['behavior'][0] +\
+                     '/sub-' + subject + '_sess-' + session_id + file_loc['behavior'][2])
     elif (datatype == 'eye'):
         for eye in file_loc['eye_type']:
             files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['eye'][0] +\
@@ -230,7 +233,21 @@ def get_all_chans(subject, exp, params=None):
         chans = np.array(chans)[analysis.reorder_chans(chans)]
     return(list(chans))
 
-def get_behavior(fs, sub, exp, sess_id):
+def get_object_features(fs, subject, exp, session):
+    filename = get_filenames(fs, subject, exp, session, 'object_features')[0]
+    if fs.exists(filename):
+        with fs.open(filename) as f:
+            of = pd.read_csv(f)
+            of['TrialNumber'] = of['TrialNumber']-1
+            of['BlockNumber'] = of['BlockNumber']-1
+            of['TrialAfterRuleChange'] = of['TrialAfterRuleChange']-1
+            of['TrialType'] = of['TrialType']-1
+            return(of)
+    else:
+        print("Object Features file does not exist")
+        return None
+
+def get_behavior(fs, sub, exp, sess_id, import_obj_features=True):
     """
     Gets the behavior file and builds a dataframe to help analyze the data.
     DOES NOT WORK ON ANYTHING BUT NHP-WCST
@@ -268,6 +285,8 @@ def get_behavior(fs, sub, exp, sess_id):
     _beh_check_last_cor(df) #Check if there's incomplete groups
     df = _beh_ignore(df)
     df = _beh_bad_trials(df, sub, exp, sess_id)
+    if import_obj_features:
+        df = _beh_add_obj_features(df, fs, sub, exp, sess_id)
     return(df)
 
 def get_eye_data(fs, sub, exp, sess_id, sample=True):
@@ -619,4 +638,39 @@ def _beh_bad_trials(df, subject, exp, session):
     df['badTrials'] = np.zeros(len(df), dtype=int)
     idx = df[df['trial'].isin(bt)].index.values
     df.loc[idx, 'badTrials'] = 1
+    return(df)
+
+def _beh_add_obj_features(df, fs, subject, exp, session):
+    '''
+    Adds object features, including shape, pattern, and color and their locations.
+    Locations are in visual degrees
+    '''
+    of = get_object_features(fs, subject, exp, session)
+    if of is None:
+        return(df)
+    else:
+        df_sub = df[df['act']=='cross_on']
+        of_sub = of[of['TrialNumber'].isin(np.unique(df.trial.values))]
+        
+        res_dict = {200:'Correct', 206:'Incorrect', 202:'Late', 204:'NoFixation'}
+        if np.all(np.array([res_dict[r] for r in df_sub.response.values])==of_sub.Response.values):
+            colName = []
+            for i in ['0','1','2','3']:
+                for j in ['_x', '_y']:
+                    df['Item'+i+j+'Pos'] = np.NaN
+                    colName.append('Item'+i+j+'Pos')
+            for i in ['0','1','2','3']:
+                for j in ['Shape', 'Color', "Pattern"]:
+                    df['Item'+i+j] = ""
+                    colName.append('Item'+i+j)
+                    
+            for t in np.unique(df.trial.values):
+                of_row = of[of['TrialNumber']==t]
+                idx = df[df['trial']==t].index.values
+                
+                for col in colName:
+                    df.loc[idx, col] = of_row[col].values[0]
+        else:
+            print('Responses are NOT equal between behavior and object features, ignoring object features...')
+            return(df)
     return(df)
