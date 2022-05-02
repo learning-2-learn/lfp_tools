@@ -51,6 +51,62 @@ def get_electrode_xyz(fs, subject, exp, session, chans_spc=None):
     
     return(coords)
 
+from scipy.io import loadmat
+def get_brian_state_model(fs, subject, exp, session):
+    '''
+    Gets the states from Brians state model
+    NOTE: exp isn't used here, yet...
+    
+    Parameters
+    ----------
+    fs : filesystem object
+    subject : the subject
+    exp : the experiment
+    session : the session to observe
+    
+    Returns
+    -------------------
+    sb_all : pandas dataframe giving the state as described by Brians model
+    '''
+    file_sess = 'l2l.jbferre.scratch/brian_state_model/sam_files_session.mat'
+    file_K_3 = 'l2l.jbferre.scratch/brian_state_model/sam_most_likely_K_3.mat'
+    file_K_4 = 'l2l.jbferre.scratch/brian_state_model/sam_most_likely_K_4.mat'
+    
+    with fs.open(file_sess) as f:
+        f_sess = loadmat(f)
+    with fs.open(file_K_3) as f:
+        f_3 = loadmat(f)
+    with fs.open(file_K_4) as f:
+        f_4 = loadmat(f)
+    
+    fileNames = f_sess['fileNames']
+    
+    idx_name = 'sub-'+subject+'_sess-'+session[2:]+'_parsedbehavior.csv'
+    idx = np.argwhere(fileNames==idx_name)[:,0]
+    
+    fileNames = fileNames[idx]
+    
+    sessionIndex = f_sess['sessionIndex'][0][idx]
+    K3_mostLikelyBlocks = f_3['mostLikelyBlocks'][0][idx]
+    K3_ruleSuper = f_3['ruleSuper'][0][idx]
+    K4_mostLikelyBlocks = f_4['mostLikelyBlocks'][0][idx]
+    K4_ruleSuper = f_4['ruleSuper'][0][idx]
+    
+    sb_all = []
+    for i in range(len(idx)):
+        sb = pd.DataFrame()
+        sb['trialNum'] = sessionIndex[i][0] - 1
+        sb['K3_ruleSuper'] = np.insert(K3_ruleSuper[i][0], 0, -1)
+        for j in range(12):
+            sb['K3_rule'+str(j)] = np.insert(np.array(K3_mostLikelyBlocks[i][j], dtype=int), 0, -1)
+        sb['K4_ruleSuper'] = np.insert(K4_ruleSuper[i][0], 0, -1)
+        for j in range(12):
+            sb['K4_rule'+str(j)] = np.insert(np.array(K4_mostLikelyBlocks[i][j], dtype=int), 0, -1)
+        sb_all.append(sb)
+    sb_all = pd.concat(sb_all, ignore_index=True)
+    
+    return(sb_all)
+
 import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
 def plot_symbols(img, loc, zoom=1):
