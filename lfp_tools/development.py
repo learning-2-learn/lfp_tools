@@ -131,10 +131,16 @@ def get_brain_areas(fs, subject, exp, session):
     -------------------
     chans : pandas dataframe that includes channels and brain areas
     '''
-    with fs.open('l2l.jbferre.scratch/sub-'+subject+'_sess-'+session+'_channellocations.csv') as f:
-        chans = pd.read_csv(f, names=['ch', 'area1', 'area2'])
-        chans[chans['ch'].isin([str(i) for i in range(200)])] = chans[chans['ch'].isin([str(i) for i in range(200)])].fillna('UnkT')
-        chans[chans['ch'].isin([str(i)+'a' for i in range(200)])] = chans[chans['ch'].isin([str(i)+'a' for i in range(200)])].fillna('UnkP')
+    # with fs.open('l2l.jbferre.scratch/sub-'+subject+'_sess-'+session+'_channellocations.csv') as f:
+    #     chans = pd.read_csv(f, names=['ch', 'area1', 'area2'])
+    #     chans[chans['ch'].isin([str(i) for i in range(200)])] = chans[chans['ch'].isin([str(i) for i in range(200)])].fillna('UnkT')
+    #     chans[chans['ch'].isin([str(i)+'a' for i in range(200)])] = chans[chans['ch'].isin([str(i)+'a' for i in range(200)])].fillna('UnkP')
+    file = 'l2l.jbferre.scratch/sub-'+subject+'_RecLocTable/sub-'+subject+'_sess-'+session+'_RecLocTable.csv'
+    if not fs.exists(file):
+        print('File does not exist')
+    else:
+        with fs.open(file) as f:
+            chans = pd.read_csv(f)
     return(chans)
 
 from sklearn.cluster import AgglomerativeClustering
