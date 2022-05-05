@@ -145,6 +145,15 @@ def load_json_file_from_S3(filename, fs):
         data = json.load(ff)
     return data
 
+from scipy.io import loadmat
+def open_mat_file(file, fs):
+    with fs.open(file) as f:
+        mat = loadmat(f)
+        keys = list(mat.keys())
+        datakeys = [i for i in keys if '__' not in i]
+        mat_data = mat[datakeys[0]][:,0]
+    return(mat_data)
+
 def open_h5py_file(file, fs):
     """
     Gets the h5py file from online storage. The file must include only one datafile.
