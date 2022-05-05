@@ -84,6 +84,45 @@ def start_cluster(n_workers=10):
     cluster.scale(n_workers)
     return(cluster, client)
     
+def get_filenames_human(fs, species, subject, exp, session_id, datatype, params=[]):
+    '''
+    Finds the filenames for the given session_id and parameters.
+    
+    Parameters
+    ----------------
+    fs: file system object
+    species : the selected species
+    subject: the selected subject
+    exp: the selected experiment
+    session_id: the session identifier
+    datatype: the type of data to retrieve.
+        'behavior', 'trial_timestamps', 'electrode_info', 'raw', 'derivative'
+    params: list of parameters interested in, in order (e.g. lfp_30)
+    
+    Returns
+    ----------------
+    list of filenames
+    '''
+    file_loc = general.load_json_file('sp-'+species+'_exp-'+exp+'_file_locations.json')
+    files = []
+    
+    if (datatype == 'behavior'):
+        files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['behavior'][0] +\
+                     '/sub-' + subject + file_loc['behavior'][1])
+    elif (datatype == 'trial_timestamps'):
+        files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['behavior'][0] +\
+                     '/sub-' + subject + file_loc['behavior'][2])
+    elif (datatype == 'electrode_info'):
+        files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id +\
+                     '/sub-' + subject + file_loc['electrode_info'])
+    elif (datatype == 'raw'):
+        temp = fs.ls(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['ephys'] + '/')
+        files = [f for f in temp if '.mat' in f]
+    elif (datatype == 'der'):
+        print('TODO')
+    else:
+        print('Wrong datatype, please input \'behavior\', \'eye\', \'raw\', or \'derivative\'')
+    return(files)
     
 def get_filenames(fs, species, subject, exp, session_id, datatype, params=[]):
     '''
@@ -107,6 +146,13 @@ def get_filenames(fs, species, subject, exp, session_id, datatype, params=[]):
     ----------------
     list of filenames
     '''
+    if species=='human':
+        files = get_filenames_human(fs, species, subject, exp, session_id, datatype, params)
+        return(files)
+    elif species!='nhp':
+        print('Incorrect species, either nhp or human')
+        return([])
+    
     file_loc = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_file_locations.json')
     files = []
     
@@ -187,6 +233,32 @@ def get_filenames(fs, species, subject, exp, session_id, datatype, params=[]):
         files = [f for f in files if fs.exists(f)]
     return(files)
 
+def get_subjects(fs, species, exp):
+    '''
+    Gets a list of subjects for some species/experiment
+    Note that for the NHP, there is currently only one subject online, this will change later
+    
+    Parameters
+    ----------
+    fs : file system
+    species : the desired species
+    exp : the experiment
+    
+    Returns
+    -------
+    subjects : list of subjects
+    '''
+    if species=='nhp':
+        file_loc = general.load_json_file('sp-'+species+'_sub-SA_exp-'+exp+'_file_locations.json')
+        subjects = np.array([file_loc['sub']])
+    elif species=='human':
+        file_loc = general.load_json_file('sp-'+species+'_exp-'+exp+'_file_locations.json')
+        subjects = np.array(file_loc['sub'])
+    else:
+        print('Incorrect species, either nhp or human')
+        subjects = []
+    return(subjects)
+
 def get_session_ids(species, subject, exp, all_ids=False):
     '''
     Finds and returns all of the possible session ids.
@@ -202,12 +274,21 @@ def get_session_ids(species, subject, exp, all_ids=False):
     -----------
     sess_ids : session ids
     '''
-    if (all_ids):
-        file_loc = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_file_locations.json')
-        return(file_loc['sess'])
+    if species=='nhp':
+        if (all_ids):
+            file_loc = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_file_locations.json')
+            sess_ids = file_loc['sess']
+        else:
+            sessions = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_good_sessions.json')
+            sess_ids = sessions['SA']
+    elif species=='human':
+        file_loc = general.load_json_file('sp-'+species+'_exp-'+exp+'_file_locations.json')
+        temp = [f for f in file_loc['sess'] if f.split('sub-')[1].split('_sess')[0]==subject]
+        sess_ids = np.array([f.split('_sess-')[1] for f in temp])
     else:
-        sessions = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_good_sessions.json')
-        return(sessions['SA'])
+        print('Species should either be nhp or human')
+        sess_ids = []
+    return sess_ids
 
 def get_all_chans(species, subject, exp, params=None):
     '''
