@@ -350,30 +350,41 @@ def get_behavior(fs, sp, sub, exp, sess_id, import_obj_features=True):
     ----------------
     df: dataframe of behavior
     """
-    file_beh = get_filenames(fs, sp, sub, exp, sess_id, 'behavior')
-    if (file_beh):
-        file_beh = file_beh[0]
+    if sp=='nhp':
+        file_beh = get_filenames(fs, sp, sub, exp, sess_id, 'behavior')
+        if (file_beh):
+            file_beh = file_beh[0]
+        else:
+            return (file_beh)
+
+        with fs.open(file_beh) as f:
+            df = pd.read_csv(f, header=None,names = ['time','encode'])
+
+        df = _beh_trim(df) #removes anything before and after real trials
+        df = _beh_special(df, sess_id, sub) # Does any special case changes
+        if (_beh_check(df)):
+            return(df) #Check if right number of data
+        df = _beh_add_trial_info(df) #Adds trial, relative_trials, group, rule, rule dim, response columns
+        df = _beh_add_last_cor(df) #Add last correct dim
+        df = _beh_change_encode_labels(df) #rename certain encodes
+        df = _beh_add_action_column(df) #adds column for actions
+        _beh_check_act(df) #Check action column to make sure it has everything
+        _beh_add_single_trial(df) #Add column that specifies weird things that occur in a group
+        _beh_check_last_cor(df) #Check if there's incomplete groups
+        df = _beh_ignore(df)
+        df = _beh_bad_trials(df, sp, sub, exp, sess_id)
+        if import_obj_features:
+            df = _beh_add_obj_features(df, fs, sp, sub, exp, sess_id)
+    elif sp=='human':
+        file = get_filenames(fs, sp, sub, exp, sess_id, 'behavior')[0]
+        with fs.open(file) as f:
+            df1 = pd.read_csv(f)
+        file = get_filenames(fs, sp, sub, exp, sess_id, 'trial_timestamps')[0]
+        with fs.open(file) as f:
+            df2 = pd.read_csv(f)
+        df = pd.concat((df1, df2), axis=1)
     else:
-        return (file_beh)
-    
-    with fs.open(file_beh) as f:
-        df = pd.read_csv(f, header=None,names = ['time','encode'])
-    
-    df = _beh_trim(df) #removes anything before and after real trials
-    df = _beh_special(df, sess_id, sub) # Does any special case changes
-    if (_beh_check(df)):
-        return(df) #Check if right number of data
-    df = _beh_add_trial_info(df) #Adds trial, relative_trials, group, rule, rule dim, response columns
-    df = _beh_add_last_cor(df) #Add last correct dim
-    df = _beh_change_encode_labels(df) #rename certain encodes
-    df = _beh_add_action_column(df) #adds column for actions
-    _beh_check_act(df) #Check action column to make sure it has everything
-    _beh_add_single_trial(df) #Add column that specifies weird things that occur in a group
-    _beh_check_last_cor(df) #Check if there's incomplete groups
-    df = _beh_ignore(df)
-    df = _beh_bad_trials(df, sp, sub, exp, sess_id)
-    if import_obj_features:
-        df = _beh_add_obj_features(df, fs, sp, sub, exp, sess_id)
+        print('Species either should be nhp or human')
     return(df)
 
 def get_eye_data(fs, sp, sub, exp, sess_id, sample=True):
@@ -427,14 +438,24 @@ def get_channel_locations(fs, sp, sub, exp, sess_id):
     ----------------
     cl: dataframe of channel locations. nan is used for channels with unknown locations
     """
-    file_cl = get_filenames(fs, sp, sub, exp, sess_id, 'chan_loc')
-    if (file_cl):
-        file_cl = file_cl[0]
+    if sp=='nhp':
+        print('TODO')
+        cl = []
+#         file_cl = get_filenames(fs, sp, sub, exp, sess_id, 'chan_loc')
+#         if (file_cl):
+#             file_cl = file_cl[0]
+#         else:
+#             return (file_cl)
+
+#         with fs.open(file_cl) as f:
+#             cl = pd.read_csv(f, header=None,names = ['chan','loc'])
+    elif sp=='human':
+        file = get_filenames(fs, sp, sub, exp, sess_id, 'electrode_info')[0]
+        with fs.open(file) as f:
+            cl = pd.read_csv(f)
     else:
-        return (file_cl)
-    
-    with fs.open(file_cl) as f:
-        cl = pd.read_csv(f, header=None,names = ['chan','loc'])
+        print('species should either be nhp or human')
+        cl = []
     
     return(cl)
 
