@@ -108,13 +108,13 @@ def get_filenames_human(fs, species, subject, exp, session_id, datatype, params=
     
     if (datatype == 'behavior'):
         files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['behavior'][0] +\
-                     '/sub-' + subject + file_loc['behavior'][1])
+                     '/sub-' + subject + '-sess-' + session_id + file_loc['behavior'][1])
     elif (datatype == 'trial_timestamps'):
         files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['behavior'][0] +\
-                     '/sub-' + subject + file_loc['behavior'][2])
+                     '/sub-' + subject + '-sess-' + session_id + file_loc['behavior'][2])
     elif (datatype == 'electrode_info'):
         files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id +\
-                     '/sub-' + subject + file_loc['electrode_info'])
+                     '/sub-' + subject + '-sess-' + session_id + file_loc['electrode_info'])
     elif (datatype == 'raw'):
         temp = fs.ls(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['ephys'] + '/')
         files = [f for f in temp if '.mat' in f]
