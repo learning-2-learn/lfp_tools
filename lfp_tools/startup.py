@@ -259,6 +259,32 @@ def get_subjects(fs, species, exp):
         subjects = []
     return(subjects)
 
+def get_raw_filetype(species, subject, exp, session):
+    '''
+    Retrieves the filetype of the raw data
+    
+    Parameters
+    -----------
+    species : species selected, nhp or human
+    subject : subject selected
+    exp : experiment selected
+    all_ids : flag indicating whether to include all sessions or just \'good\' sessions
+    
+    Returns
+    -----------
+    sess_ids : session ids
+    '''
+    if species=='nhp':
+        file_loc = general.load_json_file('sp-'+species+'_sub-SA_exp-'+exp+'_file_locations.json')
+        filetype = file_loc['raw_filetype']
+    elif species=='human':
+        file_loc = general.load_json_file('sp-'+species+'_exp-'+exp+'_file_locations.json')
+        filetype = file_loc['raw_filetype']
+    else:
+        print('Incorrect species, either nhp or human')
+        filetype = ''
+    return filetype
+
 def get_session_ids(species, subject, exp, all_ids=False):
     '''
     Finds and returns all of the possible session ids.

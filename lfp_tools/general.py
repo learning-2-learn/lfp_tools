@@ -145,6 +145,29 @@ def load_json_file_from_S3(filename, fs):
         data = json.load(ff)
     return data
 
+def open_lfp_file(file, fs, filetype='hdf5'):
+    """
+    Opens a mat file from online storage. The file should only include one datafile
+    
+    Parameters
+    ----------
+    file: the location of the file to be opened.
+    fs: the file system object
+    filetype: either hdf5 or mat, depending on the version of saved data
+
+    Returns
+    -------
+    Data file
+    """
+    if filetype=='hdf5':
+        files = open_h5py_file(file, fs)
+    elif filetype=='mat':
+        files = open_mat_file(file, fs)
+    else:
+        print('Unknown filetype, either hdf5 or mat')
+        files = []
+    return files
+
 from scipy.io import loadmat
 def open_mat_file(file, fs):
     """
