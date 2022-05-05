@@ -17,7 +17,7 @@ import pandas as pd
 
 
 from scipy.io import loadmat
-def get_electrode_xyz(fs, subject, exp, session, chans_spc=None):
+def get_electrode_xyz(fs, species, subject, exp, session, chans_spc=None):
     '''
     Clusters the channels based on their coordinates.
     Currenty gathers from l2l.jbferre.scratch/20211013_xyz_coords
@@ -25,6 +25,7 @@ def get_electrode_xyz(fs, subject, exp, session, chans_spc=None):
     Parameters
     -------------------
     fs : filesystem object
+    species : the species
     subject : the subject
     exp : the experiment
     session : the session to observe
@@ -43,7 +44,7 @@ def get_electrode_xyz(fs, subject, exp, session, chans_spc=None):
     chan = np.hstack(([str(i) for i in range(1,125)], [str(i)+'a' for i in range(1,97)]))
     coords['ch'] = chan
     
-    bad_chan = analysis.get_bad_channels(subject, exp, session)
+    bad_chan = analysis.get_bad_channels(species, subject, exp, session)
     coords = coords[~coords['ch'].isin(bad_chan)]
     
     if (chans_spc != None):
@@ -52,7 +53,7 @@ def get_electrode_xyz(fs, subject, exp, session, chans_spc=None):
     return(coords)
 
 from scipy.io import loadmat
-def get_brian_state_model(fs, subject, exp, session):
+def get_brian_state_model(fs, species, subject, exp, session):
     '''
     Gets the states from Brians state model
     NOTE: exp isn't used here, yet...
@@ -60,6 +61,7 @@ def get_brian_state_model(fs, subject, exp, session):
     Parameters
     ----------
     fs : filesystem object
+    species : the species
     subject : the subject
     exp : the experiment
     session : the session to observe
@@ -172,13 +174,14 @@ def get_ruby_model(fs):
         rmodel = pd.read_csv(f)
     return(rmodel)
 
-def get_brain_areas(fs, subject, exp, session):
+def get_brain_areas(fs, speciecs, subject, exp, session):
     '''
     Gets the brain areas of all channels
     
     Parameters
     ------------------------
     fs : filesystem object
+    species : the species
     subject : the subject
     exp : the experiment
     session : the session
@@ -282,7 +285,7 @@ def cluster_chans_by_brain_area(fs, subject, exp, session):
     label_dict.update({keys_a[i] : l for i, l in enumerate(labels_a)})
     return(label_dict)
 
-def get_saccades(fs, subject, exp, session, num_std=1, smooth=10, threshold_dist=1, sac_type='end'):
+def get_saccades(fs, species, subject, exp, session, num_std=1, smooth=10, threshold_dist=1, sac_type='end'):
     def _eye_renormalization(ex, ey, cross_time, sac_time):
         x_mean = np.mean(ex[cross_time])
         y_mean = np.mean(ey[cross_time])
@@ -302,8 +305,8 @@ def get_saccades(fs, subject, exp, session, num_std=1, smooth=10, threshold_dist
         dist = np.sqrt(np.power(x2-x1,2) + np.power(y2-y1,2))
         return(dist)
     
-    ed, ex, ey = startup.get_eye_data(fs,subject,exp,session)
-    df = startup.get_behavior(fs, subject, exp, session)
+    ed, ex, ey = startup.get_eye_data(fs,species,subject,exp,session)
+    df = startup.get_behavior(fs, species, subject, exp, session)
     ex, ey = _eye_renormalization(ex, ey, df[(df['act']=='cross_fix')].time.values, df[(df['act']=='obj_fix')|(df['act']=='obj_fix_break')].time.values)
     ex = analysis.moving_average_dim(ex, smooth, 0)
     ey = analysis.moving_average_dim(ey, smooth, 0)

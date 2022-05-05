@@ -736,12 +736,13 @@ def get_chan_neighbors(subject, exp, chan):
         drive_chans[loc[0,0], loc[0,1]-1]]
     return [ch for ch in ch_nn if ch != '0' and ch != '0a']
 
-def get_bad_channels(subject, exp, session):
+def get_bad_channels(species, subject, exp, session):
     """
     Finds and returns the bad channels of a given subject and session.
     
     Parameters
     ---------------
+    species : the species
     subject: the subject's name
     exp: the experiment selected
     session: the session id
@@ -750,7 +751,7 @@ def get_bad_channels(subject, exp, session):
     ---------------
     List of bad channels
     """
-    bad_channels = general.load_json_file('sub-'+subject+'_exp-'+exp+'_bad_channels.json')
+    bad_channels = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_bad_channels.json')
     all_sessions = list(bad_channels.keys())
     if (subject + session in all_sessions):
         return (bad_channels[subject + session])

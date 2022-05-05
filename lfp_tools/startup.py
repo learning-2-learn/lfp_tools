@@ -19,12 +19,13 @@ def get_fs():
     return(fs)
 
 
-def get_bad_trials(subject, exp, session):
+def get_bad_trials(species, subject, exp, session):
     """
     Gets the bands for a desired subject and experiment
     
     Parameters
     ----------
+    species : the selected species
     subject : the selected subject
     exp : the selected experiment
     session : the selected session
@@ -33,7 +34,7 @@ def get_bad_trials(subject, exp, session):
     -------
     bad_trials : array of bad trials for given session
     """
-    bad_trials_all = general.load_json_file('sub-'+subject+'_exp-'+exp+'_bad-trials.json')
+    bad_trials_all = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_bad-trials.json')
     if (np.any(session==np.array(list(bad_trials_all.keys())))):
         bad_trials = np.sort([int(t) for t in bad_trials_all[session]])
     else:
@@ -43,12 +44,13 @@ def get_bad_trials(subject, exp, session):
     return(bad_trials)
 
 
-def get_bands(subject, exp, idx=0):
+def get_bands(species, subject, exp, idx=0):
     """
     Gets the bands for a desired subject and experiment
     
     Parameters
     ----------
+    species : the selected species
     subject : the selected subject
     exp : the selected experiment
     idx : the index of the collection of bands to observe
@@ -57,7 +59,7 @@ def get_bands(subject, exp, idx=0):
     -------
     bands : a list of bands to use in future analysis
     """
-    bands = general.load_json_file('sub-'+subject+'_exp-'+exp+'_bands.json')
+    bands = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_bands.json')
     bands = bands[str(idx)]
     return(bands)
         
@@ -83,7 +85,7 @@ def start_cluster(n_workers=10):
     return(cluster, client)
     
     
-def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
+def get_filenames(fs, species, subject, exp, session_id, datatype, params=[]):
     '''
     Finds the filenames for the given session_id and parameters. 
     If 'ic-rem' is a parameter and the file does not exist but exists without 
@@ -93,6 +95,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     Parameters
     ----------------
     fs: file system object
+    species : the selected species
     subject: the selected subject
     exp: the selected experiment
     session_id: the session identifier
@@ -104,7 +107,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     ----------------
     list of filenames
     '''
-    file_loc = general.load_json_file('sub-'+subject+'_exp-'+exp+'_file_locations.json')
+    file_loc = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_file_locations.json')
     files = []
     
     if (datatype == 'behavior'):
@@ -125,7 +128,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
         chans = file_loc['chan']
         if (not params):
             chans = [c for c in chans if not 'GR' in c]
-            chans = [c for c in chans if c not in analysis.get_bad_channels(subject, exp, session_id)]
+            chans = [c for c in chans if c not in analysis.get_bad_channels(species, subject, exp, session_id)]
         elif (params[0]=='GR'):
             chans = [c for c in chans if 'GR' in c]
         elif (params[0]=='all'):
@@ -133,7 +136,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
         else:
             print('Parameters need to be [\'GR\'] or [\'all\'] if intended')
             chans = [c for c in chans if not 'GR' in c]
-            chans = [c for c in chans if c not in analysis.get_bad_channels(subject, exp, session_id)]
+            chans = [c for c in chans if c not in analysis.get_bad_channels(specices, subject, exp, session_id)]
         for ch in chans:
             files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['ephys'][0] +\
                          '/sub-' + subject + '_sess-' + session_id + '_chan-' + ch +\
@@ -141,7 +144,7 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
     elif (datatype == 'derivative'):
         chans = file_loc['chan']
         chans = [c for c in chans if not 'GR' in c]
-        chans = [c for c in chans if c not in analysis.get_bad_channels(subject, exp, session_id)]
+        chans = [c for c in chans if c not in analysis.get_bad_channels(species, subject, exp, session_id)]
         for ch in chans:
             files.append(file_loc['der_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['ephys'][0] +\
                          '/' + '/'.join(params) + '/sub-' + subject + '_sess-' + session_id + '_chan-' + ch +\
@@ -184,12 +187,13 @@ def get_filenames(fs, subject, exp, session_id, datatype, params=[]):
         files = [f for f in files if fs.exists(f)]
     return(files)
 
-def get_session_ids(subject, exp, all_ids=False):
+def get_session_ids(species, subject, exp, all_ids=False):
     '''
     Finds and returns all of the possible session ids.
     
     Parameters
     -----------
+    species : species selected, nhp or human
     subject : subject selected
     exp : experiment selected
     all_ids : flag indicating whether to include all sessions or just \'good\' sessions
@@ -199,18 +203,19 @@ def get_session_ids(subject, exp, all_ids=False):
     sess_ids : session ids
     '''
     if (all_ids):
-        file_loc = general.load_json_file('sub-'+subject+'_exp-'+exp+'_file_locations.json')
+        file_loc = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_file_locations.json')
         return(file_loc['sess'])
     else:
-        sessions = general.load_json_file('sub-'+subject+'_exp-'+exp+'_good_sessions.json')
+        sessions = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_good_sessions.json')
         return(sessions['SA'])
 
-def get_all_chans(subject, exp, params=None):
+def get_all_chans(species, subject, exp, params=None):
     '''
     Gets all of the channels possible for any day.
     
     Parameters
     ----------------
+    species : species selected
     subject: subject selected
     exp: experiment selected
     Params: If \'GR\', will return the GR channel names.
@@ -220,7 +225,7 @@ def get_all_chans(subject, exp, params=None):
     ----------------
     chans: the channel names sorted
     '''
-    file_loc = general.load_json_file('sub-'+subject+'_exp-'+exp+'_file_locations.json')
+    file_loc = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_file_locations.json')
     chans = file_loc['chan']
     if (not params):
         chans = [c for c in chans if not 'GR' in c]
@@ -233,8 +238,8 @@ def get_all_chans(subject, exp, params=None):
         chans = np.array(chans)[analysis.reorder_chans(chans)]
     return(list(chans))
 
-def get_object_features(fs, subject, exp, session):
-    filename = get_filenames(fs, subject, exp, session, 'object_features')[0]
+def get_object_features(fs, species, subject, exp, session):
+    filename = get_filenames(fs, species, subject, exp, session, 'object_features')[0]
     if fs.exists(filename):
         with fs.open(filename) as f:
             of = pd.read_csv(f)
@@ -247,7 +252,7 @@ def get_object_features(fs, subject, exp, session):
         print("Object Features file does not exist")
         return None
 
-def get_behavior(fs, sub, exp, sess_id, import_obj_features=True):
+def get_behavior(fs, sp, sub, exp, sess_id, import_obj_features=True):
     """
     Gets the behavior file and builds a dataframe to help analyze the data.
     DOES NOT WORK ON ANYTHING BUT NHP-WCST
@@ -255,6 +260,7 @@ def get_behavior(fs, sub, exp, sess_id, import_obj_features=True):
     Parameters
     ---------------
     fs: filesystem object
+    sp : the species selected
     sub: the subject selected
     exp: the experiment selected
     sess_id: the session to obtain the behavior file from
@@ -263,7 +269,7 @@ def get_behavior(fs, sub, exp, sess_id, import_obj_features=True):
     ----------------
     df: dataframe of behavior
     """
-    file_beh = get_filenames(fs, sub, exp, sess_id, 'behavior')
+    file_beh = get_filenames(fs, sp, sub, exp, sess_id, 'behavior')
     if (file_beh):
         file_beh = file_beh[0]
     else:
@@ -284,18 +290,19 @@ def get_behavior(fs, sub, exp, sess_id, import_obj_features=True):
     _beh_add_single_trial(df) #Add column that specifies weird things that occur in a group
     _beh_check_last_cor(df) #Check if there's incomplete groups
     df = _beh_ignore(df)
-    df = _beh_bad_trials(df, sub, exp, sess_id)
+    df = _beh_bad_trials(df, sp, sub, exp, sess_id)
     if import_obj_features:
-        df = _beh_add_obj_features(df, fs, sub, exp, sess_id)
+        df = _beh_add_obj_features(df, fs, sp, sub, exp, sess_id)
     return(df)
 
-def get_eye_data(fs, sub, exp, sess_id, sample=True):
+def get_eye_data(fs, sp, sub, exp, sess_id, sample=True):
     """
     Retrieves eye data for a given session and subject
     
     Parameters
     ---------------
     fs: filesystem object
+    sp : species selected
     sub: subject performing task
     exp: the experiment selected
     sess_id: the session desired
@@ -308,7 +315,7 @@ def get_eye_data(fs, sub, exp, sess_id, sample=True):
     eye[1]: horizontal displacement
     eye[2]: vertical displacement
     """
-    file_eye = get_filenames(fs, sub, exp, sess_id, 'eye')
+    file_eye = get_filenames(fs, sp, sub, exp, sess_id, 'eye')
     if (not file_eye):
         return (file_eye, file_eye, file_eye)
     
@@ -323,13 +330,14 @@ def get_eye_data(fs, sub, exp, sess_id, sample=True):
     print('Warning, no renormalization was done; still needs to be implemented')
     return(eye[0], eye[1], eye[2])
 
-def get_channel_locations(fs, sub, exp, sess_id):
+def get_channel_locations(fs, sp, sub, exp, sess_id):
     """
     Gets the channel locations
     
     Parameters
     ---------------
     fs: filesystem object
+    sp: the species selected
     sub: the subject selected
     exp: the experiment selected
     sess_id: the session to obtain the behavior file from
@@ -338,7 +346,7 @@ def get_channel_locations(fs, sub, exp, sess_id):
     ----------------
     cl: dataframe of channel locations. nan is used for channels with unknown locations
     """
-    file_cl = get_filenames(fs, sub, exp, sess_id, 'chan_loc')
+    file_cl = get_filenames(fs, sp, sub, exp, sess_id, 'chan_loc')
     if (file_cl):
         file_cl = file_cl[0]
     else:
@@ -630,22 +638,22 @@ def _beh_ignore(df):
         df.loc[idx, 'ignore']=1
     return(df)
 
-def _beh_bad_trials(df, subject, exp, session):
+def _beh_bad_trials(df, species, subject, exp, session):
     """
     Adds column with bad trials to dataframe
     """
-    bt = get_bad_trials(subject, exp, session)
+    bt = get_bad_trials(species, subject, exp, session)
     df['badTrials'] = np.zeros(len(df), dtype=int)
     idx = df[df['trial'].isin(bt)].index.values
     df.loc[idx, 'badTrials'] = 1
     return(df)
 
-def _beh_add_obj_features(df, fs, subject, exp, session):
+def _beh_add_obj_features(df, fs, species, subject, exp, session):
     '''
     Adds object features, including shape, pattern, and color and their locations.
     Locations are in visual degrees
     '''
-    of = get_object_features(fs, subject, exp, session)
+    of = get_object_features(fs, species, subject, exp, session)
     if of is None:
         return(df)
     else:
