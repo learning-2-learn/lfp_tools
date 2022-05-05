@@ -147,6 +147,18 @@ def load_json_file_from_S3(filename, fs):
 
 from scipy.io import loadmat
 def open_mat_file(file, fs):
+    """
+    Opens a mat file from online storage. The file should only include one datafile
+    
+    Parameters
+    ----------
+    file: the location of the file to be opened.
+    fs: the file system object
+
+    Returns
+    -------
+    Data file
+    """
     with fs.open(file) as f:
         mat = loadmat(f)
         keys = list(mat.keys())
