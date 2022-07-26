@@ -16,6 +16,42 @@ import pandas as pd
 #    return(fs)
 
 
+def get_exploration(ar, lag=1):
+    '''
+    Creates simple idea of exploration vs exploitation.
+    Switches between exploring vs exploiting based on lag consecutive correct/incorrect trials
+    
+    Parameters
+    -----------------
+    ar : array of correct (200) or incorrect (206) responses
+    lag : amount of consecutive trials distinct before switching between explore/exploit.
+        Must be greater than 0
+    
+    Returns
+    -----------------
+    exploration : array of values that are 1 (exploring) or 0 (exploiting)
+    '''
+    assert lag>0
+    
+    if np.any(ar[:lag]==206):
+        exploration = list(np.ones(lag, dtype=int))
+    else:
+        exploration = list(np.zeros(lag, dtype=int))
+    
+    for i in range(lag,len(ar)):
+        if exploration[-1]==1:
+            if np.all(ar[i-lag:i+1]==200):
+                exploration.append(0)
+            else:
+                exploration.append(1)
+        elif exploration[-1]==0:
+            if np.all(ar[i-lag:i+1]==206):
+                exploration.append(1)
+            else:
+                exploration.append(0)
+    exploration = np.array(exploration)
+    return exploration
+
 from scipy.io import loadmat
 def get_electrode_xyz(fs, species, subject, exp, session, chans_spc=None):
     '''
