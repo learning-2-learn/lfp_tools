@@ -262,7 +262,7 @@ def get_sac_strategy_idx(sac_seq):
             strat_dict['6'].append(i)
     return(strat_dict)
 
-def get_saccade_seq(df, dtype='all', length=0):
+def get_saccade_seq(df, dtype='all', length=0, ignore_first=True):
     '''
     Finds the sequence of saccades for all trials
     
@@ -274,6 +274,7 @@ def get_saccade_seq(df, dtype='all', length=0):
         last : last 'length'
         first : first 'length' starting at the second trial
         middle : all trials between 2+'length' and -'length'
+    ignore_first : flag to ignore first, stereotypical saccade that occurs before ~200ms
     
     Returns
     ---------------------
@@ -291,7 +292,15 @@ def get_saccade_seq(df, dtype='all', length=0):
         trials = np.unique(df[(df['trialRel']>=2+length) & (df['trialRelB']<-length)].trial.values)
     for t in trials:
         temp = df[(df['trial']==t) & (df['act'].isin(['obj_fix_break', 'obj_fix'])) & (df['ignore']==0) & (df['badGroup']==0)].encode.values
-        allSeq.append(temp)
+        if not ignore_first:
+            allSeq.append(temp)
+        else:
+            a2 = df[(df['trial']==t) & (df['act'].isin(['obj_fix_break', 'obj_fix'])) & (df['ignore']==0) & (df['badGroup']==0)].time.values
+            a1 = df[(df['trial']==t) & (df['act'].isin(['cross_off'])) & (df['ignore']==0) & (df['badGroup']==0)].time.values
+            if len(a2)>0 and len(a1)>0 and a2[0]-a1[0]<200:
+                allSeq.append(temp[1:])
+            else:
+                allSeq.append(temp)
     return(allSeq)
 
 def reorder_chans(chans):
