@@ -7,7 +7,7 @@ import scipy.signal as ss
 from matplotlib.widgets import Slider
 
 #below, all for saccade related things
-def create_saccade_dataframe(fs, species, subject, exp, session):
+def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2):
     '''
     Creates saccade dataframe from scratch.
     This may take a few moments, mainly to load in data
@@ -19,6 +19,7 @@ def create_saccade_dataframe(fs, species, subject, exp, session):
     subject : the subject
     exp : the experiment
     session : the session identifier
+    num_std : for saccade detection, includes saccades above this threshold
     
     Returns
     ------------------
@@ -289,7 +290,7 @@ def create_saccade_dataframe(fs, species, subject, exp, session):
     ex, ey = eye_renorm(ex, ey, df)
     
     print('Detecting Saccades...')
-    sac_dist, sac_dir, sac_start, sac_end, sac_peak = eye_saccades(ex, ey, num_std=0.5)
+    sac_dist, sac_dir, sac_start, sac_end, sac_peak = eye_saccades(ex, ey, num_std=num_std)
     
     print('Creating Dataframe...')
     sac = pd.DataFrame()
