@@ -1,9 +1,474 @@
 from lfp_tools import general
+from lfp_tools import startup
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.signal as ss
 from matplotlib.widgets import Slider
+
+#below, all for saccade related things
+def create_saccade_dataframe(fs, species, subject, exp, session):
+    '''
+    Creates saccade dataframe from scratch.
+    This may take a few moments, mainly to load in data
+    
+    Parameters
+    ------------------
+    fs : s3 file system object
+    species : species
+    subject : the subject
+    exp : the experiment
+    session : the session identifier
+    
+    Returns
+    ------------------
+    sac : saccade dataframe
+    '''
+    def _sac_get_trials(df, times):
+        trial_starts = df[df['act']=='cross_on'].time.values
+        trial_ends = np.insert(trial_starts[1:], len(trial_starts)-1, 0)
+
+        trials = df[df['act']=='cross_on'].trial.values
+        res = df[df['act']=='cross_on'].response.values
+        break_trials = np.array(
+            np.insert(
+                beh_get_breaks(df),
+                4, 
+                df.trial.values[-1]+0.5
+            ) - 0.5,
+            dtype=int
+        )
+
+        idx = np.array([np.argwhere(b==trials)[:,0] for b in break_trials])[:,0]
+        trial_ends[idx[res[idx]==200]] = df[(df['trial'].isin(idx[res[idx]==200])) & \
+                                            (df['encode']==200)].time.values+1900
+        for i in [202,204,206]:
+            trial_ends[idx[res[idx]==i]] = df[(df['trial'].isin(idx[res[idx]==i])) & \
+                                                (df['encode']==i)].time.values+5500
+
+        sac_trials = np.zeros(len(times),dtype=int)-1
+        for i,t in enumerate(trials):
+            sac_trials[(times>=trial_starts[i]) & (times<trial_ends[i])] = t
+
+        return(sac_trials)
+    
+    def _sac_zone(df, sac):
+        # part where no task is being performed
+        zone = np.array(['-' for i in range(len(sac))], dtype='<U19')
+        zone[sac['trial'].values==-1] = 'no_task'
+
+        # between cross turning on and through cross fixation
+        t_starts = df[(df['act']=='cross_on') & (df['response'].isin([200,202,206]))].time.values
+        t_ends = df[(df['act']=='cross_fix') & (df['response'].isin([200,202,206]))].time.values+350
+
+        region = np.empty((len(t_starts), len(sac)), dtype=bool)
+        for i in range(len(t_starts)):
+            region[i] = (sac['time_start'].values > t_starts[i]) & \
+                        (sac['time_start'].values <= t_ends[i]) & \
+                        (zone=='-')
+        idx = np.sum(region, axis=0)==1
+        zone[idx] = 'prep'
+
+        # end of required cross fixation and objects turning on
+        t_starts = df[(df['act']=='cross_fix') & (df['response'].isin([200,202,206]))].time.values+350
+        t_ends = df[(df['encode']==29) & (df['response'].isin([200,202,206]))].time.values+63
+
+        region = np.empty((len(t_starts), len(sac)), dtype=bool)
+        for i in range(len(t_starts)):
+            region[i] = (sac['time_start'].values > t_starts[i]) & \
+                        (sac['time_start'].values <= t_ends[i]) & \
+                        (zone=='-')
+        idx = np.sum(region, axis=0)==1
+        zone[idx] = 'pre_obj'
+
+        # objects turning on to feedback
+        t_starts = df[(df['encode']==29) & (df['response'].isin([200,206]))].time.values+63
+        t_ends = df[(df['act']=='fb') & (df['response'].isin([200,206]))].time.values
+
+        region = np.empty((len(t_starts), len(sac)), dtype=bool)
+        for i in range(len(t_starts)):
+            region[i] = (sac['time_start'].values > t_starts[i]) & \
+                        (sac['time_start'].values <= t_ends[i]) & \
+                        (zone=='-')
+        idx = np.sum(region, axis=0)==1
+        zone[idx] = 'obj'
+
+        # feedback to next cross on
+        t_starts = df[(df['act']=='fb') & (df['response'].isin([200]))].time.values
+        t_ends = t_starts + 2100
+
+        region = np.empty((len(t_starts), len(sac)), dtype=bool)
+        for i in range(len(t_starts)):
+            region[i] = (sac['time_start'].values > t_starts[i]) & \
+                        (sac['time_start'].values <= t_ends[i]) & \
+                        (zone=='-')
+        idx = np.sum(region, axis=0)==1
+        zone[idx] = 'fb'
+
+        t_starts = df[(df['act']=='fb') & (df['response'].isin([206]))].time.values
+        t_ends = t_starts + 5700
+
+        region = np.empty((len(t_starts), len(sac)), dtype=bool)
+        for i in range(len(t_starts)):
+            region[i] = (sac['time_start'].values > t_starts[i]) & \
+                        (sac['time_start'].values <= t_ends[i]) & \
+                        (zone=='-')
+        idx = np.sum(region, axis=0)==1
+        zone[idx] = 'fb'
+
+        # no cross fixation
+        t_starts = df[(df['act']=='cross_on') & (df['response'].isin([204]))].time.values
+        t_ends = df[(df['encode']==204) & (df['response'].isin([204]))].time.values + 6000
+
+        region = np.empty((len(t_starts), len(sac)), dtype=bool)
+        for i in range(len(t_starts)):
+            region[i] = (sac['time_start'].values > t_starts[i]) & \
+                        (sac['time_start'].values <= t_ends[i]) & \
+                        (zone=='-')
+        idx = np.sum(region, axis=0)==1
+        zone[idx] = 'no_cross_fix'
+
+        # late response
+        t_starts = df[(df['act']=='cross_on') & (df['response'].isin([202]))].time.values
+        t_ends = df[(df['encode']==202) & (df['response'].isin([202]))].time.values + 6000
+
+        region = np.empty((len(t_starts), len(sac)), dtype=bool)
+        for i in range(len(t_starts)):
+            region[i] = (sac['time_start'].values > t_starts[i]) & \
+                        (sac['time_start'].values <= t_ends[i]) & \
+                        (zone=='-')
+        idx = np.sum(region, axis=0)==1
+        zone[idx] = 'late_response'
+
+        zone[zone=='-'] = 'unsure'
+
+        return(zone)
+    
+    def _is_left(x1, x2, y1, y2, px, py):
+        '''
+        left is defined as left of line when going from x1,y1 to x2,y2
+        '''
+        val = ((x2 - x1)*(py - y1) - (y2 - y1)*(px - x1)) > 0
+        return(val)
+
+    def _check_what_trial(times, t_starts, t_ends):
+        idx = np.zeros(len(times), dtype=int) - 1
+        for i in range(len(t_starts)):
+            temp = np.argwhere((times>=t_starts[i]) & (times<t_ends[i]))[:,0]
+            idx[temp] = i
+        return idx
+
+    def _combine_objs(ar):
+        '''
+        Combines array elements so that every kind of saccade is represented
+
+        Parameters
+        ----------------
+        ar : 2d array that's 4 (4 objects) by the number of saccades
+
+        Returns
+        ----------------
+        loc : 1d array of length number of saccades
+        '''
+        loc = np.array([{'-':'n','s':'s0','h':'h0'}[t] for t in ar[0]], dtype='<U19')
+
+        for j in range(ar.shape[1]):
+            for i in range(1,4):
+                # if string doesn't have any objects yet
+                if loc[j]=='n':
+                    if ar[i,j]=='h' or ar[i,j]=='s':
+                        loc[j] = ar[i,j]+str(i)
+                # if string does have objects
+                elif ar[i,j]=='h' or ar[i,j]=='s':
+                    loc[j] = loc[j] + '_' + ar[i,j] + str(i)
+        return(loc)
+
+    def _check_obj_loc(ex, ey, obj_x, obj_y, obj_s):
+        scaling = 200/24 #scaling of image compared to bounding boxes
+        loc = np.array([['-','-','-','-'] for i in range(len(ex))], dtype='<U19').T
+
+        soft = (ex>obj_x-4.5) & \
+               (ex<obj_x+4.5) & \
+               (ey>obj_y-4.5) & \
+               (ey<obj_y+4.5)
+
+        for i in range(4):
+            loc[i,soft[i]]='s'
+    
+        for i in range(4):
+            idx = np.argwhere(obj_s[i]=='Circle')[:,0]
+            r = ((ex[idx] - obj_x[i,idx])**2 + (ey[idx] - obj_y[i,idx])**2)**0.5
+            loc[i,idx[r<=scaling/2]] = 'h'
+
+            idx = np.argwhere(obj_s[i]=='Square')[:,0]
+            r = 0.76 * scaling/2 #0.76 is size of box in image
+            left = ex[idx] - obj_x[i,idx] > -r
+            right = ex[idx] - obj_x[i,idx] < r
+            down = ey[idx] - obj_y[i,idx] > -r
+            up = ey[idx] - obj_y[i,idx] < r
+            loc[i,idx[(left) & (right) & (down) & (up)]] = 'h'
+
+            idx = np.argwhere(obj_s[i]=='Triangle')[:,0]
+            r = scaling/2
+            down = ey[idx] - obj_y[i,idx] > -0.72*r
+            left = ~_is_left(obj_x[i,idx]-r,obj_x[i,idx],\
+                            obj_y[i,idx]-0.72*r, obj_y[i,idx]+r,\
+                            ex[idx], ey[idx])
+            right = _is_left(obj_x[i,idx]+r,obj_x[i,idx],\
+                            obj_y[i,idx]-0.72*r, obj_y[i,idx]+r,\
+                            ex[idx], ey[idx])
+            loc[i,idx[(down) & (left) & (right)]] = 'h'
+
+            idx = np.argwhere(obj_s[i]=='Star')[:,0]
+            r = scaling/2
+            #lines are numbered by 1 to 5, where they are 
+            #down left, up right, left, down right, up left
+            l1 = _is_left(obj_x[i,idx],obj_x[i,idx]-0.6*r,\
+                            obj_y[i,idx]+r, obj_y[i,idx]-r,\
+                            ex[idx], ey[idx])
+            l2 = _is_left(obj_x[i,idx]-0.6*r,obj_x[i,idx]+r,\
+                            obj_y[i,idx]-r, obj_y[i,idx]+0.28*r,\
+                            ex[idx], ey[idx])
+            l3 = _is_left(obj_x[i,idx]+r,obj_x[i,idx]-r,\
+                            obj_y[i,idx]+0.28*r, obj_y[i,idx]+0.28*r,\
+                            ex[idx], ey[idx])
+            l4 = _is_left(obj_x[i,idx]-r,obj_x[i,idx]+0.6*r,\
+                            obj_y[i,idx]+0.28*r, obj_y[i,idx]-r,\
+                            ex[idx], ey[idx])
+            l5 = _is_left(obj_x[i,idx]+0.6*r,obj_x[i,idx],\
+                            obj_y[i,idx]-r, obj_y[i,idx]+r,\
+                            ex[idx], ey[idx])
+            center = (l1) & (l2) & (l3) & (l4) & (l5)
+            a1 = (~l1) & (l3) & (l4)
+            a2 = (~l2) & (l4) & (l5)
+            a3 = (~l3) & (l5) & (l1)
+            a4 = (~l4) & (l1) & (l2)
+            a5 = (~l5) & (l2) & (l3)
+            loc[i,idx[(center) | (a1) | (a2) | (a3) | (a4) | (a5)]] = 'h'
+
+        loc_small = _combine_objs(loc)
+
+        return(loc_small)
+
+    def _sac_obj_location(times, ex, ey, df):
+        '''
+        Finds what object the eye position is currently in
+
+        Parameters
+        ----------------
+        times : time of eye position
+        ex : x eye position at each time
+        ey : y eye position at each time
+        df : behavioral dataframe with object features
+        '''
+        t_starts = df[(df['encode']==29) & (df['response'].isin([200,206]))].time.values+63
+        t_ends = df[(df['act']=='fb') & (df['response'].isin([200,206]))].time.values
+        df_temp = df[(df['encode']==29) & (df['response'].isin([200,206]))]
+        obj_x_loc = []
+        obj_y_loc = []
+        obj_shape = []
+        for i in range(4):
+            obj_x_loc.append(df_temp['Item'+str(i)+'_xPos'].values)
+            obj_y_loc.append(df_temp['Item'+str(i)+'_yPos'].values)
+            obj_shape.append(df_temp['Item'+str(i)+'Shape'].values)
+        obj_x_loc = np.array(obj_x_loc)
+        obj_y_loc = np.array(obj_y_loc)
+        obj_shape = np.array(obj_shape, dtype=object)
+
+        idx = _check_what_trial(times, t_starts, t_ends)
+        objs = _check_obj_loc(ex, ey, obj_x_loc[:,idx], obj_y_loc[:,idx], obj_shape[:,idx])
+        return objs
+    
+    print('Loading dataframe and eye data...')
+    print('Be patient, this is the slowest part...')
+    df = startup.get_behavior(fs, species, subject, exp, session, import_obj_features=True)
+    ep, ex, ey = startup.get_eye_data(fs, species, subject, exp, session)
+    print('Finished loading data')
+    
+    print('Renormalizing eye data...')
+    ex, ey = eye_renorm(ex, ey, df)
+    
+    print('Detecting Saccades...')
+    sac_dist, sac_dir, sac_start, sac_end, sac_peak = eye_saccades(ex, ey, num_std=0.5)
+    
+    print('Creating Dataframe...')
+    sac = pd.DataFrame()
+    sac['distance'] = sac_dist
+    sac['direction'] = sac_dir
+    sac['time_start'] = sac_start
+    sac['time_peak'] = sac_peak
+    sac['time_end'] = sac_end
+
+    sac['x_start'] = ex[sac.time_start.values]
+    sac['y_start'] = ey[sac.time_start.values]
+    sac['x_end'] = ex[sac.time_end.values]
+    sac['y_end'] = ey[sac.time_end.values]
+    sac['pupil_start'] = ep[sac.time_start.values]
+    sac['pupil_end'] = ep[sac.time_end.values]
+    
+    sac['trial'] = _sac_get_trials(df, sac['time_start'].values)
+    sac['zone'] = _sac_zone(df, sac)
+    
+    #object starting locations
+    sac['obj_start'] = '-'
+    idx = sac[sac['zone']=='obj'].index.values
+
+    sac.loc[idx, 'obj_start'] = _sac_obj_location(
+        sac[sac['zone']=='obj'].time_start.values,
+        ex[sac[sac['zone']=='obj'].time_start.values],
+        ey[sac[sac['zone']=='obj'].time_start.values],
+        df
+    )
+
+    #Object ending locations
+    sac['obj_end'] = '-'
+    idx = sac[sac['zone']=='obj'].index.values
+
+    sac.loc[idx, 'obj_end'] = _sac_obj_location(
+        sac[sac['zone']=='obj'].time_end.values,
+        ex[sac[sac['zone']=='obj'].time_end.values],
+        ey[sac[sac['zone']=='obj'].time_end.values],
+        df
+    )
+    
+    cols = ['trial', 'zone', 'obj_start', 'obj_end', 'distance', 'direction', \
+            'time_start', 'time_end', 'time_peak', \
+            'x_start', 'y_start', 'x_end', 'y_end', 'pupil_start', 'pupil_end']
+    sac = sac[cols]
+    
+    return sac
+
+def eye_saccades(ex, ey, num_std=1, smooth=10):
+    '''
+    Detects saccades
+    
+    Parameters
+    -----------------
+    ex : normalized eye (x) data
+    ey : normalized eye (y) data
+    num_std : number of standard deviations of distance traveled to quantify saccade
+    smooth : amount of smoothing to incur before finding saccades
+    
+    Returns
+    -----------------
+    sac_dist : distance saccade travelled in total
+    sac_dir : direction of each saccade in degrees
+    sac_start : time start of each saccade
+    sac_end : time end of each saccade
+    sac_peak : peak time of each saccade
+    '''
+    def _distance(x,y):
+        x1 = x[:-1]
+        x2 = x[1:]
+        y1 = y[:-1]
+        y2 = y[1:]
+        dist = np.sqrt(np.power(x2-x1,2) + np.power(y2-y1,2))
+        return(dist)
+    
+    ex = moving_average_dim(ex, smooth, 0)
+    ey = moving_average_dim(ey, smooth, 0)
+    dist = _distance(ex, ey)
+    t_adjust = int(np.round(smooth/2))
+    
+    idx_sac = np.argwhere(dist > num_std * np.std(dist))[:,0]
+    idx_sep = np.insert(np.argwhere(idx_sac[1:]-idx_sac[:-1] > 5)[:,0]+1, 0, 0)
+    sac_groups = []
+    for i in range(len(idx_sep)-1):
+        sac_groups.append(idx_sac[idx_sep[i]:idx_sep[i+1]])
+    max_sac = []
+    sac_dist = []
+    sac_start = []
+    sac_end = []
+    sac_peak = []
+    sac_dir = []
+    for s in sac_groups:
+        sac_start.append(s[0])
+        sac_end.append(s[-1])
+        
+        temp = np.argmax(dist[s])
+        sac_peak.append(s[temp])
+        
+        sac_dist.append(np.sqrt(np.power(ex[s[-1]] - ex[s[0]], 2) + np.power(ey[s[-1]] - ey[s[0]], 2)))
+        sac_dir.append(np.angle((ex[s[-1]] - ex[s[0]]) + 1j*(ey[s[-1]] - ey[s[0]]), deg=True))
+        
+    sac_start = np.array(sac_start, dtype=int) + t_adjust
+    sac_end = np.array(sac_end, dtype=int) + t_adjust
+    sac_peak = np.array(sac_peak, dtype=int) + t_adjust
+    sac_dist = np.array(sac_dist)
+    sac_dir = np.array(sac_dir)
+    return(sac_dist, sac_dir, sac_start, sac_end, sac_peak)
+
+def eye_renorm(ex, ey, df, trouble_shoot_plot=False):
+    '''
+    This function renormalizes the eye data based on the fixation cross and object locations
+    NOTE : Make sure df has object features
+    
+    Parameters
+    ------------------
+    ex : x position of eye data
+    ey : y position of eye data
+    df : behavioral dataframe with object features included
+    trouble_shoot_plot : bool flag that specifies informative plot about scaling variable
+    
+    Returns
+    ------------------
+    ex3 : x position of renormalized data
+    ey3 : y position of renormalized data
+    '''
+    #cross fixation times
+    cr_fix = df[df['act']=='cross_off'].time.values-500
+    
+    #object locations and fixation times (only last one with full 800 ms of fixation)
+    x = []
+    y = []
+    t = []
+    for i,val in enumerate([2300,2500,2700,2900]):
+        df_temp = df[
+            (df['act']=='obj_fix') & \
+            (df['encode']==val) & \
+            (df['response'].isin([200,206]))
+        ]
+        x.append(df_temp['Item'+str(i)+'_xPos'].values)
+        y.append(df_temp['Item'+str(i)+'_yPos'].values)
+        t.append(df_temp.time.values)
+    x = np.hstack(x)
+    y = np.hstack(y)
+    t = np.hstack(t)
+    
+    #expands to 800 ms
+    tx_temp = np.hstack([np.arange(s,s+800) for s in t[np.abs(x)>4]])
+    x_temp = np.hstack([np.ones(800)*s for s in x[np.abs(x)>4]])
+    ty_temp = np.hstack([np.arange(s,s+800) for s in t[np.abs(y)>4]])
+    y_temp = np.hstack([np.ones(800)*s for s in y[np.abs(y)>4]])
+    
+    #Re-means based on cross fixation time
+    ex_m = np.mean(ex[np.hstack([np.arange(c,c+350) for c in cr_fix])])
+    ey_m = np.mean(ey[np.hstack([np.arange(c,c+350) for c in cr_fix])])
+
+    ex2 = ex - ex_m
+    ey2 = ey - ey_m
+    
+    #Re-scales based on object final fixation times
+    temp = x_temp / ex2[tx_temp]
+    ex_s = np.mean(temp[(temp>0) & (temp<3000)])
+
+    temp = y_temp / ey2[ty_temp]
+    ey_s = np.mean(temp[(temp>0) & (temp<3000)])
+
+    ex3 = ex2 * ex_s
+    ey3 = ey2 * ey_s
+    
+    #troubleshooting. Probably can remove this, but may be helpful in evalutating code
+    
+    if trouble_shoot_plot:
+        _ = plt.hist(x_temp / ex2[tx_temp], range=[0,3000], bins=20, alpha=0.5)
+        _ = plt.hist(y_temp / ey2[ty_temp], range=[0,3000], bins=20, alpha=0.5)
+        plt.xlabel('obj fixation scale')
+        plt.ylabel('num counts')
+    
+    return(ex3, ey3)
+
+#Above, all for saccade related things
 
 
 def dataframe_insert_row(row_number, df, row_value):
