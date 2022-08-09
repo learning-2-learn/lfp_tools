@@ -7,6 +7,50 @@ import scipy.signal as ss
 from matplotlib.widgets import Slider
 
 #below, all for saccade related things
+def sac_get_stereotypical_response(df, sac, dir_l=-110, dir_h=-70, sac_delay_t=50, obj_delay_t=50):
+    '''
+    Finds the stereotypical responses based on the desired parameters
+    
+    Parameters
+    ----------------
+    df : behavioral dataframe
+    sac : saccade dataframe
+    dir_l : lower bound on direction
+    dir_h : upper bound on direction
+    sac_delay_t : time delay between end of one saccade and start of next saccade
+    obj_delay_t : time delay between start of all saccades after objects turn on
+    
+    Returns
+    ----------------
+    sac : saccade dataframe with extra column of stereotypical responses
+    '''
+    trials = np.unique(df[df['response'].isin([200,206])]['trial'].values)
+    sac = sac.copy()
+    sac['stereotypical'] = 0
+    idx_val = []
+    for i,t in enumerate(trials):
+        zone = sac[sac['trial']==t].zone.values
+        direction = sac[sac['trial']==t].direction.values
+        sac_start_t = sac[sac['trial']==t].time_start.values
+        sac_end_t = sac[sac['trial']==t].time_end.values
+        obj_start_t = df[(df['trial']==t) & (df['act']=='obj_on')].time.values[0] + 63
+        sac_idx = sac[sac['trial']==t].index.values
+
+        if np.any('prep'==zone):
+            direction = direction[~(zone=='prep')]
+            sac_start_t = sac_start_t[~(zone=='prep')]
+            sac_end_t = sac_end_t[~(zone=='prep')]
+            sac_idx = sac_idx[~(zone=='prep')]
+            zone = zone[~(zone=='prep')]
+
+        temp = (direction>dir_l) & \
+               (direction<dir_h) & \
+               np.insert((sac_start_t[1:] - sac_end_t[:-1] < sac_delay_t), 0, True) & \
+               (sac_start_t - obj_start_t < obj_delay_t)
+        idx_val.append(sac_idx[:np.argwhere(temp==False)[0,0]])
+    sac.loc[np.hstack(idx_val), 'stereotypical'] = 1
+    return(sac)
+
 def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2):
     '''
     Creates saccade dataframe from scratch.
