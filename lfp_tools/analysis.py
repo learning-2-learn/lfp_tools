@@ -51,7 +51,7 @@ def sac_get_stereotypical_response(df, sac, dir_l=-110, dir_h=-70, sac_delay_t=5
     sac.loc[np.hstack(idx_val), 'stereotypical'] = 1
     return(sac)
 
-def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2):
+def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, dir_l=-110, dir_h=-70, sac_delay_t=50, obj_delay_t=50):
     '''
     Creates saccade dataframe from scratch.
     This may take a few moments, mainly to load in data
@@ -64,6 +64,10 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2):
     exp : the experiment
     session : the session identifier
     num_std : for saccade detection, includes saccades above this threshold
+    dir_l : for stereotypical saccade detection, lower bound on direction
+    dir_h : for stereotypical saccade detection, upper bound on direction
+    sac_delay_t : for stereotypical saccade detection, time delay between end of one saccade and start of next saccade
+    obj_delay_t : for stereotypical saccade detection, time delay between start of all saccades after objects turn on
     
     Returns
     ------------------
@@ -376,8 +380,11 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2):
         df
     )
     
+    #Stereotypical response
+    sac = sac_get_stereotypical_response(df, sac, dir_l=dir_l, dir_h=dir_h, sac_delay_t=sac_delay_t, obj_delay_t=obj_delay_t)
+    
     cols = ['trial', 'zone', 'obj_start', 'obj_end', 'distance', 'direction', \
-            'time_start', 'time_end', 'time_peak', \
+            'stereotypical', 'time_start', 'time_end', 'time_peak', \
             'x_start', 'y_start', 'x_end', 'y_end', 'pupil_start', 'pupil_end']
     sac = sac[cols]
     
