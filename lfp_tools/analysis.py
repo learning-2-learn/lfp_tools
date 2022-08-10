@@ -407,7 +407,7 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
     #Stereotypical response
     sac = sac_get_stereotypical_response(df, sac, dir_l=dir_l, dir_h=dir_h, sac_delay_t=sac_delay_t, obj_delay_t=obj_delay_t)
     
-    cols = ['trial', 'interval', 'obj_start', 'obj_end', 'distance', 'direction', \
+    cols = ['trial', 'interval', 'obj_start', 'obj_end', 'distance', 'direction', 'stereotypical', \
             'time_start', 'time_end', 'time_peak', \
             'fix_len', 'fix_std_x', 'fix_std_y', \
             'x_start', 'y_start', 'x_end', 'y_end', 'pupil_start', 'pupil_end']
