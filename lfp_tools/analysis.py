@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.signal as ss
 from matplotlib.widgets import Slider
+from sklearn.linear_model import LinearRegression
 
 #below, all for saccade related things
 def sac_get_stereotypical_response(df, sac, dir_l=-110, dir_h=-70, sac_delay_t=50, obj_delay_t=50):
@@ -29,7 +30,7 @@ def sac_get_stereotypical_response(df, sac, dir_l=-110, dir_h=-70, sac_delay_t=5
     sac['stereotypical'] = 0
     idx_val = []
     for i,t in enumerate(trials):
-        zone = sac[sac['trial']==t].zone.values
+        zone = sac[sac['trial']==t].interval.values
         direction = sac[sac['trial']==t].direction.values
         sac_start_t = sac[sac['trial']==t].time_start.values
         sac_end_t = sac[sac['trial']==t].time_end.values
@@ -130,9 +131,9 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
         idx = np.sum(region, axis=0)==1
         zone[idx] = 'pre_obj'
 
-        # objects turning on to feedback
+        # objects turning on to object fixation
         t_starts = df[(df['encode']==29) & (df['response'].isin([200,206]))].time.values+63
-        t_ends = df[(df['act']=='fb') & (df['response'].isin([200,206]))].time.values
+        t_ends = df[(df['act']=='fb') & (df['response'].isin([200,206]))].time.values - 800
 
         region = np.empty((len(t_starts), len(sac)), dtype=bool)
         for i in range(len(t_starts)):
@@ -141,6 +142,18 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
                         (zone=='-')
         idx = np.sum(region, axis=0)==1
         zone[idx] = 'obj'
+
+        # object fixation to fb
+        t_starts = df[(df['act']=='fb') & (df['response'].isin([200,206]))].time.values - 800
+        t_ends = df[(df['act']=='fb') & (df['response'].isin([200,206]))].time.values
+
+        region = np.empty((len(t_starts), len(sac)), dtype=bool)
+        for i in range(len(t_starts)):
+            region[i] = (sac['time_start'].values > t_starts[i]) & \
+                        (sac['time_start'].values <= t_ends[i]) & \
+                        (zone=='-')
+        idx = np.sum(region, axis=0)==1
+        zone[idx] = 'obj_fix'
 
         # feedback to next cross on
         t_starts = df[(df['act']=='fb') & (df['response'].isin([200]))].time.values
@@ -355,36 +368,48 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
     sac['pupil_start'] = ep[sac.time_start.values]
     sac['pupil_end'] = ep[sac.time_end.values]
     
+    a = sac['time_start'].values[1:]
+    b = sac['time_end'].values[:-1]
+    fix_len = a - b
+    fix_len = np.insert(fix_len, len(fix_len), -1)
+    sac['fix_len'] = fix_len
+
+    fix_std_x = np.array([np.std(ex[np.arange(b[i],a[i])]) for i in range(len(a))])
+    sac['fix_std_x'] = np.insert(fix_std_x, len(fix_std_x), -1)
+    fix_std_y = np.array([np.std(ey[np.arange(b[i],a[i])]) for i in range(len(a))])
+    sac['fix_std_y'] = np.insert(fix_std_x, len(fix_std_x), -1)
+    
     sac['trial'] = _sac_get_trials(df, sac['time_start'].values)
-    sac['zone'] = _sac_zone(df, sac)
+    sac['interval'] = _sac_zone(df, sac)
     
     #object starting locations
     sac['obj_start'] = '-'
-    idx = sac[sac['zone']=='obj'].index.values
+    idx = sac[sac['interval'].isin(['obj','obj_fix'])].index.values
 
     sac.loc[idx, 'obj_start'] = _sac_obj_location(
-        sac[sac['zone']=='obj'].time_start.values,
-        ex[sac[sac['zone']=='obj'].time_start.values],
-        ey[sac[sac['zone']=='obj'].time_start.values],
+        sac[sac['interval'].isin(['obj','obj_fix'])].time_start.values,
+        ex[sac[sac['interval'].isin(['obj','obj_fix'])].time_start.values],
+        ey[sac[sac['interval'].isin(['obj','obj_fix'])].time_start.values],
         df
     )
 
     #Object ending locations
     sac['obj_end'] = '-'
-    idx = sac[sac['zone']=='obj'].index.values
+    idx = sac[sac['interval'].isin(['obj','obj_fix'])].index.values
 
     sac.loc[idx, 'obj_end'] = _sac_obj_location(
-        sac[sac['zone']=='obj'].time_end.values,
-        ex[sac[sac['zone']=='obj'].time_end.values],
-        ey[sac[sac['zone']=='obj'].time_end.values],
+        sac[sac['interval'].isin(['obj','obj_fix'])].time_end.values,
+        ex[sac[sac['interval'].isin(['obj','obj_fix'])].time_end.values],
+        ey[sac[sac['interval'].isin(['obj','obj_fix'])].time_end.values],
         df
     )
     
     #Stereotypical response
     sac = sac_get_stereotypical_response(df, sac, dir_l=dir_l, dir_h=dir_h, sac_delay_t=sac_delay_t, obj_delay_t=obj_delay_t)
     
-    cols = ['trial', 'zone', 'obj_start', 'obj_end', 'distance', 'direction', \
-            'stereotypical', 'time_start', 'time_end', 'time_peak', \
+    cols = ['trial', 'interval', 'obj_start', 'obj_end', 'distance', 'direction', \
+            'time_start', 'time_end', 'time_peak', \
+            'fix_len', 'fix_std_x', 'fix_std_y', \
             'x_start', 'y_start', 'x_end', 'y_end', 'pupil_start', 'pupil_end']
     sac = sac[cols]
     
@@ -488,10 +513,10 @@ def eye_renorm(ex, ey, df, trouble_shoot_plot=False):
     t = np.hstack(t)
     
     #expands to 800 ms
-    tx_temp = np.hstack([np.arange(s,s+800) for s in t[np.abs(x)>4]])
-    x_temp = np.hstack([np.ones(800)*s for s in x[np.abs(x)>4]])
-    ty_temp = np.hstack([np.arange(s,s+800) for s in t[np.abs(y)>4]])
-    y_temp = np.hstack([np.ones(800)*s for s in y[np.abs(y)>4]])
+    tx_temp = np.hstack([np.arange(s,s+800) for s in t])
+    x_temp = np.hstack([np.ones(800)*s for s in x])
+    ty_temp = np.hstack([np.arange(s,s+800) for s in t])
+    y_temp = np.hstack([np.ones(800)*s for s in y])
     
     #Re-means based on cross fixation time
     ex_m = np.mean(ex[np.hstack([np.arange(c,c+350) for c in cr_fix])])
@@ -501,22 +526,41 @@ def eye_renorm(ex, ey, df, trouble_shoot_plot=False):
     ey2 = ey - ey_m
     
     #Re-scales based on object final fixation times
-    temp = x_temp / ex2[tx_temp]
-    ex_s = np.mean(temp[(temp>0) & (temp<3000)])
-
-    temp = y_temp / ey2[ty_temp]
-    ey_s = np.mean(temp[(temp>0) & (temp<3000)])
-
-    ex3 = ex2 * ex_s
-    ey3 = ey2 * ey_s
+    model = LinearRegression(fit_intercept=False)
+    model.fit(np.array([x_temp]).T, ex2[tx_temp])
+    x_reg = model.coef_[0]
+    model.fit(np.array([y_temp]).T, ey2[ty_temp])
+    y_reg = model.coef_[0]
+    ex3 = ex2 / x_reg
+    ey3 = ey2 / y_reg
     
     #troubleshooting. Probably can remove this, but may be helpful in evalutating code
     
     if trouble_shoot_plot:
-        _ = plt.hist(x_temp / ex2[tx_temp], range=[0,3000], bins=20, alpha=0.5)
-        _ = plt.hist(y_temp / ey2[ty_temp], range=[0,3000], bins=20, alpha=0.5)
-        plt.xlabel('obj fixation scale')
-        plt.ylabel('num counts')
+        fig, ax = plt.subplots(1,2,figsize=(6,3),sharex=False,sharey=True)
+        fig.tight_layout(pad=0)
+        ax[0].scatter(x_temp, ex2[tx_temp])
+        ax[0].plot(
+            [-8, 8], 
+            [-8 * x_reg,8 * x_reg],
+            color='red'
+        )
+        ax[1].scatter(y_temp, ey2[ty_temp])
+        ax[1].plot(
+            [-8, 8], 
+            [-8 * y_reg, 8 * y_reg],
+            color='red'
+        )
+        for i in range(-8,9):
+            if np.any(x_temp==i):
+                ax[0].scatter(i, np.mean(ex2[tx_temp][x_temp==i]), color='red')
+            if np.any(y_temp==i):
+                ax[1].scatter(i, np.mean(ey2[ty_temp][y_temp==i]), color='red')
+        ax[0].set_xlabel('x vis degrees')
+        ax[1].set_xlabel('y vis degrees')
+        ax[0].set_ylabel('x/y eye units')
+        fig.subplots_adjust(bottom=0.2)
+        fig.subplots_adjust(left=0.12)
     
     return(ex3, ey3)
 
