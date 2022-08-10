@@ -348,7 +348,7 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
     print('Finished loading data')
     
     print('Renormalizing eye data...')
-    ex, ey = eye_renorm(ex, ey, df)
+    ex, ey = eye_calibration(ex, ey, df)
     
     print('Detecting Saccades...')
     sac_dist, sac_dir, sac_start, sac_end, sac_peak = eye_saccades(ex, ey, num_std=num_std)
@@ -475,7 +475,7 @@ def eye_saccades(ex, ey, num_std=1, smooth=10):
     sac_dir = np.array(sac_dir)
     return(sac_dist, sac_dir, sac_start, sac_end, sac_peak)
 
-def eye_renorm(ex, ey, df, trouble_shoot_plot=False):
+def eye_calibration(ex, ey, df, trouble_shoot_plot=False):
     '''
     This function renormalizes the eye data based on the fixation cross and object locations
     NOTE : Make sure df has object features
