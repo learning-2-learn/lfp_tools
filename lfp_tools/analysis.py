@@ -52,7 +52,7 @@ def sac_get_stereotypical_response(df, sac, dir_l=-110, dir_h=-70, sac_delay_t=5
     sac.loc[np.hstack(idx_val), 'stereotypical'] = 1
     return(sac)
 
-def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, dir_l=-110, dir_h=-70, sac_delay_t=50, obj_delay_t=50):
+def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, dir_l=-110, dir_h=-70, sac_delay_t=50, obj_delay_t=50, troubleshoot=False):
     '''
     Creates saccade dataframe from scratch.
     This may take a few moments, mainly to load in data
@@ -69,10 +69,18 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
     dir_h : for stereotypical saccade detection, upper bound on direction
     sac_delay_t : for stereotypical saccade detection, time delay between end of one saccade and start of next saccade
     obj_delay_t : for stereotypical saccade detection, time delay between start of all saccades after objects turn on
+    troubleshoot : flag for returning extra variables of use
     
     Returns
     ------------------
     sac : saccade dataframe
+    
+    if troubleshoot
+    Returns
+    ------------------
+    sac : saccade dataframe
+    ex : x eye position
+    ex : y eye position
     '''
     def _sac_get_trials(df, times):
         trial_starts = df[df['act']=='cross_on'].time.values
@@ -348,7 +356,7 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
     print('Finished loading data')
     
     print('Renormalizing eye data...')
-    ex, ey = eye_calibration(ex, ey, df)
+    ex, ey = eye_calibration(ex, ey, df, trouble_shoot_plot=troubleshoot)
     
     print('Detecting Saccades...')
     sac_dist, sac_dir, sac_start, sac_end, sac_peak = eye_saccades(ex, ey, num_std=num_std)
@@ -413,7 +421,10 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
             'x_start', 'y_start', 'x_end', 'y_end', 'pupil_start', 'pupil_end']
     sac = sac[cols]
     
-    return sac
+    if troubleshoot:
+        return sac, ex, ey
+    else:
+        return sac
 
 def eye_saccades(ex, ey, num_std=1, smooth=10):
     '''
