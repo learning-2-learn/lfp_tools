@@ -210,6 +210,37 @@ def open_h5py_file(file, fs):
         mwt_chan = mwt_chan[:].squeeze()
     return mwt_chan
 
+def save_dataframe_to_s3(df, metadata, location, overwrite=False):
+    '''
+    Saves a dataframe to s3
+    
+    Parameters
+    ----------------
+    df : dataframe in question
+    metadata : metadata about creation of dataframe
+    location : location of data, make sure it doesn't include any ending (.csv e.g.)
+    overwrite : if false, doesn't overwrite any data
+    
+    Returns
+    ----------------
+    'Files saved: ' + location
+    '''
+    if (not overwrite):
+        assert not (fs.exists(location+'.csv') or fs.exists(location+'.json')), \
+        'File already exists, check location and name'
+        
+    local_df = 'temp.csv'
+    sac.to_csv(local_df)
+    local_json = save_json_file(metadata, 'temp.json', local=True)
+    
+    fs.put(local_df, location+'.csv')
+    fs.put(local_json, location+'.json')
+    
+    os.remove(local_df)
+    os.remove(local_json)
+    
+    return('Files saved: '+location)
+
 def save_h5py_file(data, col_name, filename='new_file'):
     """
     Creates h5py file with data to store

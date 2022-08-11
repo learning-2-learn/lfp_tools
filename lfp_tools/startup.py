@@ -18,6 +18,41 @@ def get_fs():
     fs = s3fs.S3FileSystem()
     return(fs)
 
+def get_sac_dataframe(fs, species, subject, exp, session, get_json=False):
+    '''
+    Retrieves saccade dataframe from S3
+    
+    Parameters
+    ------------------
+    fs : s3 filesystem object
+    species : species (currently only valid for nhp)
+    subject : subject
+    exp : experiment
+    session : session identifier
+    get_json : flag to indicate whether to return the json file too
+    
+    Returns
+    ------------------
+    if not get_json:
+        sac : saccade dataframe
+    else:
+        sac_json : json file attached to dataframe
+    '''
+    assert species=='nhp', 'Function not currently valid for humans or any species except nhp'
+    loc = 'nhp-lfp/wcst-preprocessed/rawdata/sub-'+subject+\
+          '/sess-'+session+'/behavior/sub-'+subject+'_sess-'+session+'_saccades'
+    
+    assert (fs.exists(loc+'.csv') and fs.exists(loc+'.json')), \
+    'Files do not exist, run 20220810_nd_sac_dataframe.ipynb first'
+    
+    if get_json:
+        sac_json = general.load_json_file_from_S3(loc+'.json', fs)
+        return(sac_json)
+    else:
+        with fs.open(loc+'.csv') as f:
+            sac = pd.read_csv(f, index_col=0)
+        return(sac)
+
 
 def get_bad_trials(species, subject, exp, session):
     """
