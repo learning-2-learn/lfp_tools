@@ -88,10 +88,11 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
 
         trials = df[df['act']=='cross_on'].trial.values
         res = df[df['act']=='cross_on'].response.values
+        break_trials = beh_get_breaks(df)
         break_trials = np.array(
             np.insert(
-                beh_get_breaks(df),
-                4, 
+                break_trials,
+                len(break_trials), 
                 df.trial.values[-1]+0.5
             ) - 0.5,
             dtype=int
