@@ -210,12 +210,13 @@ def open_h5py_file(file, fs):
         mwt_chan = mwt_chan[:].squeeze()
     return mwt_chan
 
-def save_dataframe_to_s3(df, metadata, location, overwrite=False):
+def save_dataframe_to_s3(fs, df, metadata, location, overwrite=False):
     '''
     Saves a dataframe to s3
     
     Parameters
     ----------------
+    fs : s3 filesystem object
     df : dataframe in question
     metadata : metadata about creation of dataframe
     location : location of data, make sure it doesn't include any ending (.csv e.g.)
@@ -230,7 +231,7 @@ def save_dataframe_to_s3(df, metadata, location, overwrite=False):
         'File already exists, check location and name'
         
     local_df = 'temp.csv'
-    sac.to_csv(local_df)
+    df.to_csv(local_df)
     local_json = save_json_file(metadata, 'temp.json', local=True)
     
     fs.put(local_df, location+'.csv')
