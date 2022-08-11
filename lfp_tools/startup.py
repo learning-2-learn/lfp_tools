@@ -184,7 +184,7 @@ def get_filenames(fs, species, subject, exp, session_id, datatype, params=[]):
             chans = [c for c in chans if not 'GR' in c]
             chans = [c for c in chans if c not in analysis.get_bad_channels(specices, subject, exp, session_id)]
         for ch in chans:
-            files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['ephys'][0] +\
+            files.append(file_loc['raw_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + 'lfp' +\
                          '/sub-' + subject + '_sess-' + session_id + '_chan-' + ch +\
                          file_loc['ephys'][1])
     elif (datatype == 'derivative'):
