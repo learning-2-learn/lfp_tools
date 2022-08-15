@@ -422,7 +422,7 @@ def get_behavior(fs, sp, sub, exp, sess_id, import_obj_features=True):
             df = pd.read_csv(f, header=None,names = ['time','encode'])
 
         df = _beh_trim(df) #removes anything before and after real trials
-        df = _beh_special(df, sess_id, sub) # Does any special case changes
+        # df = _beh_special(df, sess_id, sub) # Does any special case changes
         # df = _beh_add_non_written(df) #adds encodes to account for gflush and 350ms cross fixation 
         if (_beh_check(df)):
             return(df) #Check if right number of data
