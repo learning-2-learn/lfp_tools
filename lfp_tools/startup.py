@@ -422,8 +422,6 @@ def get_behavior(fs, sp, sub, exp, sess_id, import_obj_features=True):
             df = pd.read_csv(f, header=None,names = ['time','encode'])
 
         df = _beh_trim(df) #removes anything before and after real trials
-        # df = _beh_special(df, sess_id, sub) # Does any special case changes
-        # df = _beh_add_non_written(df) #adds encodes to account for gflush and 350ms cross fixation 
         if (_beh_check(df)):
             return(df) #Check if right number of data
         df = _beh_add_trial_info(df) #Adds trial, relative_trials, group, rule, rule dim, response columns
@@ -561,38 +559,6 @@ def get_channel_locations(fs, sp, sub, exp, sess_id):
 
 # Helper functions
     
-    
-def _beh_add_non_written(df):
-    """
-    Adds encodes that are not normally written to the behavioral file.
-    It adds: 
-        '-10' for 350 ms cross fixation requirement
-        '-20' for gflush turning objects on
-        '-21' for gflush turning objects off
-    """
-    cr_off_rows = np.argwhere(df.encode.values==36)[:,0] - 8 #8 accounts for 5000 encodes
-    print(len(cr_off_rows))
-    cr_off_times = df[df['encode']==36].time.values - 150 #accounts for delay
-    
-    for i in range(len(cr_off_rows)-1,-1,-1):
-        df = analysis.dataframe_insert_row(cr_off_rows[i], df, [cr_off_times[i], -10])
-        
-    gflush_on_rows = np.argwhere(df.encode.values==29)[:,0] + 1
-    print(len(gflush_on_rows))
-    gflush_on_times = df[df['encode']==29].time.values + 63 #accounts for delay
-    
-    for i in range(len(gflush_on_rows)-1,-1,-1):
-        df = analysis.dataframe_insert_row(gflush_on_rows[i], df, [gflush_on_times[i], -20])
-        
-    gflush_off_rows = np.argwhere(df.encode.values==30)[:,0] + 1
-    print(len(gflush_off_rows))
-    gflush_off_times = df[df['encode']==30].time.values + 63 #accounts for delay
-    
-    for i in range(len(gflush_off_rows)-1,-1,-1):
-        df = analysis.dataframe_insert_row(gflush_off_rows[i], df, [gflush_off_times[i], -21])
-    
-    return df
-    
 def _beh_trim(df):
     """
     Removes anything before and after first and last trial in behavior file.
@@ -615,30 +581,6 @@ def _beh_trim(df):
         end = df[(df['encode']==151) & (df['time']>time_response_1)].time.values[0]
     
     df = df[(df['time']>=start) & (df['time']<=end)]
-    return(df)
-
-def _beh_special(df, sess, sub):
-    """
-    Corrects specific sessions as special cases in behavior file.
-    """
-    if (sess == '20180712' and sub == 'SA'):
-        idx=df[df['encode']==1800].index.values
-        df.loc[idx, 'encode']=2012
-    if (sess == '20180817' and sub == 'SA'):
-        idx=df[df['encode']==1800].index.values
-        df.loc[idx, 'encode']=2012
-    if (sess == '20180928' and sub == 'SA'):
-        idx=df[df['encode']==3].index.values
-        df.loc[idx, 'encode']=35
-    if (sess == '20181019' and sub == 'SA'):
-        df = df.drop(np.arange(9060, 9071))
-        df.loc[9071, 'time'] = -1
-        df.loc[9072, 'time'] = -1
-    if (sess == '20180803' and sub == 'SA'):
-        df = df.drop(np.arange(35259, 35261))
-    if (sess == '20181015' and sub == 'SA'):
-        idx=df[df['time']==3915266].index.values
-        df.loc[idx, 'encode']=29
     return(df)
 
 def _beh_check(df):
