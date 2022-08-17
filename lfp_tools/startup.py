@@ -381,14 +381,25 @@ def get_all_chans(species, subject, exp, params=None):
     return(list(chans))
 
 def get_object_features(fs, species, subject, exp, session):
+    """
+    Gets the object features csv file and builds a dataframe
+    
+    Parameters
+    ----------------
+    fs : s3 file system object
+    species : species selected
+    subject : subject selected
+    exp : experiment selected
+    session : session selected
+    
+    Returns
+    ----------------
+    of : dataframe of object features
+    """
     filename = get_filenames(fs, species, subject, exp, session, 'object_features')[0]
     if fs.exists(filename):
         with fs.open(filename) as f:
             of = pd.read_csv(f)
-            of['TrialNumber'] = of['TrialNumber']-1
-            of['BlockNumber'] = of['BlockNumber']-1
-            of['TrialAfterRuleChange'] = of['TrialAfterRuleChange']-1
-            of['TrialType'] = of['TrialType']-1
             return(of)
     else:
         print("Object Features file does not exist")
