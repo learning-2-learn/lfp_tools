@@ -490,7 +490,6 @@ def get_eye_data(fs, sp, sub, exp, sess_id, sample=True):
         else:
             eye.append(temp)
     
-    print('Warning, no renormalization was done; still needs to be implemented')
     return(eye[0], eye[1], eye[2])
 
 def get_channel_locations(fs, sp, sub, exp, sess_id):
