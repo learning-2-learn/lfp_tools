@@ -578,8 +578,8 @@ def _beh_trim(df):
         print('No trials in this file')
         return(df)
     
-    time_response_0 = df[(df['encode']==200) | (df['encode']==206)].time.values[0]
-    time_response_1 = df[(df['encode']==200) | (df['encode']==206)].time.values[-1]
+    time_response_0 = df[df['encode'].isin([200,202,204,206])].time.values[0]
+    time_response_1 = df[df['encode'].isin([200,202,204,206])].time.values[-1]
     
     if (sum((df['encode']==150) & (df['time']<time_response_0)) == 0):
         start = df[df['encode']==150].time.values[0]
