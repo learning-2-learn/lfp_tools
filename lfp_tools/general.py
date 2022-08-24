@@ -145,7 +145,7 @@ def load_json_file_from_S3(filename, fs):
         data = json.load(ff)
     return data
 
-def open_lfp_file(file, fs, filetype='hdf5'):
+def open_lfp_file(file, fs, filetype='hdf5', num_return=1):
     """
     Opens a mat file from online storage. The file should only include one datafile
     
@@ -154,22 +154,23 @@ def open_lfp_file(file, fs, filetype='hdf5'):
     file: the location of the file to be opened.
     fs: the file system object
     filetype: either hdf5 or mat, depending on the version of saved data
+    num_return: number of data arguments to return. Use 'all' to return all of them
 
     Returns
     -------
     Data file
     """
     if filetype=='hdf5':
-        files = open_h5py_file(file, fs)
+        files = open_h5py_file(file, fs, num_return)
     elif filetype=='mat':
-        files = open_mat_file(file, fs)
+        files = open_mat_file(file, fs, num_return)
     else:
         print('Unknown filetype, either hdf5 or mat')
         files = []
     return files
 
 from scipy.io import loadmat
-def open_mat_file(file, fs):
+def open_mat_file(file, fs, num_return=1):
     """
     Opens a mat file from online storage. The file should only include one datafile
     
@@ -177,6 +178,7 @@ def open_mat_file(file, fs):
     ----------
     file: the location of the file to be opened.
     fs: the file system object
+    num_return: number of data arguments to return. Use 'all' to return all of them
 
     Returns
     -------
@@ -186,8 +188,16 @@ def open_mat_file(file, fs):
         mat = loadmat(f)
         keys = list(mat.keys())
         datakeys = [i for i in keys if '__' not in i]
-        mat_data = mat[datakeys[0]][:,0]
-    return(mat_data)
+        if num_return=='all':
+            num_return = len(datakeys)
+        if num_return==1:
+            data = mat[datakeys[0]][:,0]
+        else:
+            data = []
+            for i in range(num_return):
+                data.append(mat[datakeys[i]][:,0])
+            data = np.array(data)
+    return(data)
 
 def open_h5py_file(file, fs, num_return=1):
     """
@@ -215,7 +225,7 @@ def open_h5py_file(file, fs, num_return=1):
         else:
             data = []
             for i in range(num_return):
-                temp = f_chan[datakeys[1]]
+                temp = f_chan[datakeys[i]]
                 data.append(temp[:].squeeze())
             data = np.array(data)
     return data
