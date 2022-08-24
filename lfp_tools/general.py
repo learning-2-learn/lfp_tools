@@ -189,7 +189,7 @@ def open_mat_file(file, fs):
         mat_data = mat[datakeys[0]][:,0]
     return(mat_data)
 
-def open_h5py_file(file, fs):
+def open_h5py_file(file, fs, num_return=1):
     """
     Gets the h5py file from online storage. The file must include only one datafile.
 
@@ -197,6 +197,7 @@ def open_h5py_file(file, fs):
     ----------
     file: the location of the file to be opened.
     fs: the file system object
+    num_return: number of data arguments to return. Use 'all' to return all of them
 
     Returns
     -------
@@ -206,9 +207,18 @@ def open_h5py_file(file, fs):
         f_chan = h5py.File(f_chan, 'r')
         keys = list(f_chan.keys())
         datakeys = [i for i in keys if '__' not in i]
-        mwt_chan = f_chan[datakeys[0]]
-        mwt_chan = mwt_chan[:].squeeze()
-    return mwt_chan
+        if num_return=='all':
+            num_return = len(datakeys)
+        if num_return==1:
+            temp = f_chan[datakeys[0]]
+            data = temp[:].squeeze()
+        else:
+            data = []
+            for i in range(num_return):
+                temp = f_chan[datakeys[1]]
+                data.append(temp[:].squeeze())
+            data = np.array(data)
+    return data
 
 def save_dataframe_to_s3(fs, df, metadata, location, overwrite=False):
     '''
