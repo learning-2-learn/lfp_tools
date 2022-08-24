@@ -48,7 +48,10 @@ def sac_get_stereotypical_response(df, sac, dir_l=-110, dir_h=-70, sac_delay_t=5
                (direction<dir_h) & \
                np.insert((sac_start_t[1:] - sac_end_t[:-1] < sac_delay_t), 0, True) & \
                (sac_start_t - obj_start_t < obj_delay_t)
-        idx_val.append(sac_idx[:np.argwhere(temp==False)[0,0]])
+        # print(t, len(sac_idx), np.sum(temp==True), np.argwhere(temp==False))
+        # if len(sac_idx)>0:
+        if np.sum(temp==False)>0:
+            idx_val.append(sac_idx[:np.argwhere(temp==False)[0,0]])
     sac.loc[np.hstack(idx_val), 'stereotypical'] = 1
     return(sac)
 
@@ -84,7 +87,16 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
     '''
     def _sac_get_trials(df, times):
         trial_starts = df[df['act']=='cross_on'].time.values
-        trial_ends = np.insert(trial_starts[1:], len(trial_starts)-1, 0)
+        last_response = df[df['encode'].isin([200,202,204,206])].encode.values[-1]
+        if last_response==206:
+            last_time = df[df['encode'].isin([200,202,204,206])].time.values[-1]+5500
+        else:
+            last_time = df[df['encode'].isin([200,202,204,206])].time.values[-1]+1900
+        trial_ends = np.insert(
+            trial_starts[1:], 
+            len(trial_starts)-1, 
+            last_time
+        )
 
         trials = df[df['act']=='cross_on'].trial.values
         res = df[df['act']=='cross_on'].response.values
@@ -267,11 +279,11 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
             loc[i,soft[i]]='s'
     
         for i in range(4):
-            idx = np.argwhere(obj_s[i]=='Circle')[:,0]
+            idx = np.argwhere(obj_s[i]=='CIRCLE')[:,0]
             r = ((ex[idx] - obj_x[i,idx])**2 + (ey[idx] - obj_y[i,idx])**2)**0.5
             loc[i,idx[r<=scaling/2]] = 'h'
 
-            idx = np.argwhere(obj_s[i]=='Square')[:,0]
+            idx = np.argwhere(obj_s[i]=='SQUARE')[:,0]
             r = 0.76 * scaling/2 #0.76 is size of box in image
             left = ex[idx] - obj_x[i,idx] > -r
             right = ex[idx] - obj_x[i,idx] < r
@@ -279,7 +291,7 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
             up = ey[idx] - obj_y[i,idx] < r
             loc[i,idx[(left) & (right) & (down) & (up)]] = 'h'
 
-            idx = np.argwhere(obj_s[i]=='Triangle')[:,0]
+            idx = np.argwhere(obj_s[i]=='TRIANGLE')[:,0]
             r = scaling/2
             down = ey[idx] - obj_y[i,idx] > -0.72*r
             left = ~_is_left(obj_x[i,idx]-r,obj_x[i,idx],\
@@ -290,7 +302,7 @@ def create_saccade_dataframe(fs, species, subject, exp, session, num_std=0.2, di
                             ex[idx], ey[idx])
             loc[i,idx[(down) & (left) & (right)]] = 'h'
 
-            idx = np.argwhere(obj_s[i]=='Star')[:,0]
+            idx = np.argwhere(obj_s[i]=='STAR')[:,0]
             r = scaling/2
             #lines are numbered by 1 to 5, where they are 
             #down left, up right, left, down right, up left
