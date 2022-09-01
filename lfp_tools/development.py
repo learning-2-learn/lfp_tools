@@ -66,6 +66,7 @@ def get_electrode_xyz(fs, species, subject, exp, session, chans_spc=None):
     exp : the experiment
     session : the session to observe
     chans_spc : specific channels to find xyz location
+        Use 'all' to get all channels, regardless if they've been determined as 'bad'
     
     Returns
     -------------------
@@ -80,11 +81,13 @@ def get_electrode_xyz(fs, species, subject, exp, session, chans_spc=None):
     chan = np.hstack(([str(i) for i in range(1,125)], [str(i)+'a' for i in range(1,97)]))
     coords['ch'] = chan
     
-    bad_chan = analysis.get_bad_channels(species, subject, exp, session)
-    coords = coords[~coords['ch'].isin(bad_chan)]
-    
-    if (chans_spc != None):
+    if (chans_spc == 'all'):
+        coords = coords
+    elif (chans_spc != None):
         coords = coords[coords['ch'].isin(chans_spc)]
+    else:
+        bad_chan = analysis.get_bad_channels(species, subject, exp, session)
+        coords = coords[~coords['ch'].isin(bad_chan)]
     
     return(coords)
 
