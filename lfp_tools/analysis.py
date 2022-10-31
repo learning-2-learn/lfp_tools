@@ -7,7 +7,7 @@ import scipy.signal as ss
 from matplotlib.widgets import Slider
 from sklearn.linear_model import LinearRegression
 
-def get_monkey_choices(of, min_block=2, max_block=-1):
+def get_monkey_choices(of, min_block=2):
     '''
     Helper function to find what the monkey chose and what cards were available in the WCST dataset
     Removes trials where the monkey was NOT correct or incorrect
@@ -16,7 +16,6 @@ def get_monkey_choices(of, min_block=2, max_block=-1):
     ------------------
     of : object feature dataframe
     min_block : minimum block number to consider. Set to 0 to start at beginning
-    max_block : maximum block number to consider. Set to 0 to end at the very end.
     
     Returns
     ------------------
@@ -26,7 +25,7 @@ def get_monkey_choices(of, min_block=2, max_block=-1):
     '''
     of_sub = of[
         (of['BlockNumber']>=min_block) & 
-        (of['BlockNumber']<=np.max(of.BlockNumber.values))+max_block & 
+        (of['BlockNumber']<np.max(of.BlockNumber.values)) & 
         (of['Response'].isin(['Correct', 'Incorrect']))
     ]
     
