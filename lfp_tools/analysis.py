@@ -7,7 +7,7 @@ import scipy.signal as ss
 from matplotlib.widgets import Slider
 from sklearn.linear_model import LinearRegression
 
-def get_monkey_choices(of, min_block=2):
+def get_monkey_choices(of, min_block=2, add_prev_trial=False):
     '''
     Helper function to find what the monkey chose and what cards were available in the WCST dataset
     Removes trials where the monkey was NOT correct or incorrect
@@ -16,6 +16,7 @@ def get_monkey_choices(of, min_block=2):
     ------------------
     of : object feature dataframe
     min_block : minimum block number to consider. Set to 0 to start at beginning
+    add_prev_trial : flag indicating whether or not to include a trial from the previous block to help with testing
     
     Returns
     ------------------
@@ -23,11 +24,14 @@ def get_monkey_choices(of, min_block=2):
     res : response (correct or incorrect) of trial
     cards : cards for each trial, where integers are encoded to features.
     '''
-    of_sub = of[
+    idx = of[
         (of['BlockNumber']>=min_block) & 
         (of['BlockNumber']<np.max(of.BlockNumber.values)) & 
         (of['Response'].isin(['Correct', 'Incorrect']))
-    ]
+    ].index.values
+    if add_prev_trial:
+        idx = np.insert(idx, 0, idx[0]-1)
+    of_sub = of[of.index.isin(idx)]
     
     FEATURE_NAMES = np.array([
         'CIRCLE', 'SQUARE', 'STAR', 'TRIANGLE', 
@@ -39,13 +43,14 @@ def get_monkey_choices(of, min_block=2):
     
     item_chosen = np.array(of_sub.ItemChosen.values, dtype=int)
     res = of_sub.Response.values
+    rules = np.array([feature_dict[r] for r in of_sub.CurrentRule.values])
     cards = np.empty((len(of_sub), 4, 3), int)
     for i in range(4):
         for j, dim in enumerate(['Shape', 'Color', 'Pattern']):
             temp = of_sub['Item'+str(i)+dim].values
             cards[:,i,j] = np.array([feature_dict[f] for f in temp])
             
-    return(item_chosen, res, cards)
+    return(item_chosen, res, cards, rules)
 
 #below, all for saccade related things
 def sac_get_stereotypical_response(df, sac, dir_l=-110, dir_h=-70, sac_delay_t=50, obj_delay_t=50):
