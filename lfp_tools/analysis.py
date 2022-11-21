@@ -7,6 +7,259 @@ import scipy.signal as ss
 from matplotlib.widgets import Slider
 from sklearn.linear_model import LinearRegression
 
+#############
+#Between ###, functions for finding probabilities of choosing features
+
+def _get_trial_type(of):
+    '''
+    Gets the trial type for every trial in of. Trial type can be:
+        start : starting trials in a rule block (before or including 2 incorrect trials)
+        search : search period
+        end : last 8/8 or 16/20 trials
+        none : first block, last block, late, or no fixation trials
+        
+    Parameters
+    ----------
+    of : object feature dataframe
+    
+    Returns
+    -------
+    ts : array of strings indicating trial type
+    '''
+    def _get_bad_trials(of):
+        idx = (of.Response.values=='Late') | \
+              (of.Response.values=='NoFixation') | \
+              (of.BlockNumber.values==0) | \
+              (of.BlockNumber.values==np.max(of.BlockNumber.values))
+        return(idx)
+        
+    def _get_start_trials(of, ts):
+        res = of.Response.values
+        tarc = of.TrialAfterRuleChange.values
+
+        block = 'start'
+        num_in_block = 0
+        for i in range(len(res)):
+            if ts[i]=='':
+                if block=='search':
+                    if tarc[i]==0:
+                        block = 'start'
+                        num_in_block = 0
+
+                if block=='start':
+                    if num_in_block<1:
+                        ts[i] = block
+                    else:
+                        num_in_block = 0
+                        ts[i] = block
+                        block = 'search'
+
+                    if res[i]=='Incorrect':
+                        num_in_block += 1
+        return(ts)
+    
+    def _get_end_trials(of, ts):
+        block = 'end'
+        num_in_block = 0
+        thresh = 8 #last 8/8 or 16/20
+
+        for i in range(len(res)-1,0-1,-1):
+            if ts[i]=='start':
+                block = 'end'
+                num_in_block = 0
+                thresh = 8
+
+            if ts[i]=='':
+                if block=='end':
+                    if num_in_block<thresh-1:
+                        ts[i] = block
+                    else:
+                        ts[i] = block
+                        num_in_block = 0
+                        block='search'
+
+                    if res[i]=='Correct':
+                        num_in_block += 1
+                    elif res[i]=='Incorrect':
+                        thresh = 16
+        return(ts)
+    
+    ts = np.empty(len(of), dtype='<U20')
+
+    idx = _get_bad_trials(of)
+    ts[idx] = 'none'
+
+    ts = _get_start_trials(of, ts)
+    ts = _get_end_trials(of, ts)
+
+    ts[ts==''] = 'search'
+
+    return(ts)
+
+def _get_seq_trials(of, seq, post_seq=1):
+    '''
+    Finds all of the trials that obey the given sequence
+
+    Parameters
+    ----------
+    of : object feature dataframe
+    seq : sequence of correct or incorrect responses
+    post_seq : number of trials after sequence to include 
+        (must be either Correct or Incorrect)
+
+    Returns
+    -------
+    trials_sub : array of array of trial sequences that obey seq
+    '''
+    res = of.Response.values
+    trials = of.TrialNumber.values
+    assert len(res)==len(trials)
+
+    res_temp = np.array([res[i:i+len(seq)+post_seq] for i in range(len(res)-len(seq)-post_seq)])
+    trials_temp = np.array([trials[i:i+len(seq)+post_seq] for i in range(len(trials)-len(seq)-post_seq)])
+    idx = np.all(res_temp[:,:len(seq)] == np.array(seq), axis=1) & \
+          np.all((res_temp[:,len(seq):]=='Correct') | (res_temp[:,len(seq):]=='Incorrect'), axis=1)
+    trials_sub = trials_temp[idx]
+
+    return(trials_sub)
+
+def _get_card_feat(of_sub, dtype='single'):
+    '''
+    Gets the card features of the choice at specific trials
+
+    Parameters
+    ----------
+    of_sub : object feature dataframe preselected for desired trials
+    dtype : either 'single' (gets individual features of chosen card)
+        or 'all' (gets features of all cards)
+
+    Returns
+    -------
+    c / colors : array of colors
+    s / shapes : array of shapes
+    p / patterns : array of patterns
+    '''
+    assert dtype=='single' or dtype=='all', 'wrong \'dtype\', either \'single\' or \'all\''
+
+    patterns = of_sub[['Item'+str(i)+'Pattern' for i in range(4)]].values
+    colors = of_sub[['Item'+str(i)+'Color' for i in range(4)]].values
+    shapes = of_sub[['Item'+str(i)+'Shape' for i in range(4)]].values
+
+    if dtype=='all':
+        return(colors, shapes, patterns)
+    else:
+        choice = np.array(of_sub.ItemChosen.values, dtype=int)
+        idx = (np.arange(len(choice)), choice)
+
+        p = patterns[idx]
+        c = colors[idx]
+        s = shapes[idx]
+        return(c, s, p)
+
+def subselect_elements(a, b):
+    '''
+    Subselects elements from one array that exist in second array
+    
+    Parameters
+    ----------
+    a : numbers in first array
+    b : numbers in second array
+    
+    Returns
+    -------
+    idx : array of bools saying if elements in array a are in array b
+    '''
+    idx = np.empty(len(a), dtype=bool)
+    for i in range(len(a)):
+        if np.any(a[i]==b):
+            idx[i] = True
+        else:
+            idx[i] = False
+    return(idx)
+
+def prob_a_on_b(of, seq, a, b, trials_b=None):
+    '''
+    Calculates the probabilities that a feature on card a was chosen on card b
+    
+    Parameters
+    ----------
+    of : object feature dataframe
+    seq : sequence of correct or incorrect responses
+    a : first card idx
+    b : second card idx
+    trials_b : specific trials to include (aligns with when card b is chosen)
+        
+    Returns
+    -------
+    prob : probability of choosing a feature on card a on card b
+    chance : chance of choosing a feature on card a on card b
+    '''
+    trials = _get_seq_trials(of, seq, post_seq=1+b-len(seq))
+    if trials_b is not None:
+        idx = subselect_elements(trials[:,b], trials_b)
+        trials = trials[idx]
+    
+    a_c, a_s, a_p = _get_card_feat(of[of['TrialNumber'].isin(trials[:,a])])
+    b_c, b_s, b_p = _get_card_feat(of[of['TrialNumber'].isin(trials[:,b])])
+    b_c_all, b_s_all, b_p_all = _get_card_feat(of[of['TrialNumber'].isin(trials[:,b])], 'all')
+    
+    prob = (a_c==b_c) | (a_s==b_s) | (a_p==b_p)
+    prob = np.sum(prob) / len(prob)
+    
+    chance = (a_c[:,None]==b_c_all) | (a_s[:,None]==b_s_all) | (a_p[:,None]==b_p_all)
+    chance = np.mean(np.sum(chance, axis=1))/4
+    
+    return(prob, chance)
+
+
+def prob_a_on_b_exclude_c(of, seq, a, b, c, trials_b=None):
+    '''
+    Calculates the probabilities that a feature on card a was chosen on card b, excluding card c
+    Also, we enforce that at least one of the features on card a was chosen on card c
+    
+    Parameters
+    ----------
+    of : object feature dataframe
+    seq : sequence of correct or incorrect responses
+    a : first card idx
+    b : second card idx
+    c : excluded card idx (must be between a and b)
+    trials_b : specific trials to include (aligns with when card b is chosen)
+        
+    Returns
+    -------
+    prob : probability of choosing a feature on card a on card b
+    chance : chance of choosing a feature on card a on card b
+    '''
+    assert c!=a
+    assert c!=b
+    
+    trials = _get_seq_trials(of, seq, post_seq=1+b-len(seq))
+    if trials_b is not None:
+        idx = subselect_elements(trials[:,b], trials_b)
+        trials = trials[idx]
+    
+    a_c, a_s, a_p = _get_card_feat(of[of['TrialNumber'].isin(trials[:,a])])
+    b_c, b_s, b_p = _get_card_feat(of[of['TrialNumber'].isin(trials[:,b])])
+    c_c, c_s, c_p = _get_card_feat(of[of['TrialNumber'].isin(trials[:,c])])
+    b_c_all, b_s_all, b_p_all = _get_card_feat(of[of['TrialNumber'].isin(trials[:,b])], 'all')
+    
+    idx = (a_c==c_c) | (a_s==c_s) | (a_c==c_s)
+    
+    prob = ((a_c==b_c) & (a_c!=c_c)) | \
+           ((a_s==b_s) & (a_s!=c_s)) | \
+           ((a_p==b_p) & (a_p!=c_p))
+    prob = np.sum(prob[idx]) / len(prob[idx])
+    
+    chance = ((a_c[:,None]==b_c_all) & (a_c!=c_c)[:,None]) | \
+             ((a_s[:,None]==b_s_all) & (a_s!=c_s)[:,None]) | \
+             ((a_p[:,None]==b_p_all) & (a_p!=c_p)[:,None])
+    chance = np.mean(np.sum(chance[idx], axis=1))/4
+    
+    return(prob, chance)
+
+#############
+
 def get_monkey_choices(of, min_block=2, add_prev_trial=False):
     '''
     Helper function to find what the monkey chose and what cards were available in the WCST dataset
