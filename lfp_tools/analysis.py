@@ -59,6 +59,7 @@ def _get_trial_type(of):
         return(ts)
     
     def _get_end_trials(of, ts):
+        res = of.Response.values
         block = 'end'
         num_in_block = 0
         thresh = 8 #last 8/8 or 16/20
@@ -244,7 +245,7 @@ def prob_a_on_b_exclude_c(of, seq, a, b, c, trials_b=None):
     c_c, c_s, c_p = _get_card_feat(of[of['TrialNumber'].isin(trials[:,c])])
     b_c_all, b_s_all, b_p_all = _get_card_feat(of[of['TrialNumber'].isin(trials[:,b])], 'all')
     
-    idx = (a_c==c_c) | (a_s==c_s) | (a_c==c_s)
+    idx = (a_c==c_c) | (a_s==c_s) | (a_p==c_p)
     
     prob = ((a_c==b_c) & (a_c!=c_c)) | \
            ((a_s==b_s) & (a_s!=c_s)) | \
@@ -255,6 +256,66 @@ def prob_a_on_b_exclude_c(of, seq, a, b, c, trials_b=None):
              ((a_s[:,None]==b_s_all) & (a_s!=c_s)[:,None]) | \
              ((a_p[:,None]==b_p_all) & (a_p!=c_p)[:,None])
     chance = np.mean(np.sum(chance[idx], axis=1))/4
+    
+    return(prob, chance)
+
+
+def prob_a_on_b_include_c(of, seq, a, b, c, trials_b=None):
+    '''
+    Calculates the probability that a feature on card a was chosen on card b, 
+        if that feature was the only one chosen (from a) on card c
+    Also, we enforce that at least one of the features on card a was chosen on card b
+    
+    Parameters
+    ----------
+    of : object feature dataframe
+    seq : sequence of correct or incorrect responses
+    a : first card idx
+    b : second card idx
+    c : included card idx (must be between a and b)
+    trials_b : specific trials to include (aligns with when card b is chosen)
+        
+    Returns
+    -------
+    prob : probability of choosing a feature on card a on card b
+    chance : chance of choosing a feature on card a on card b
+    '''
+    assert c!=a
+    assert c!=b
+    
+    trials = _get_seq_trials(of, seq, post_seq=1+b-len(seq))
+    if trials_b is not None:
+        idx = subselect_elements(trials[:,b], trials_b)
+        trials = trials[idx]
+    
+    a_c, a_s, a_p = _get_card_feat(of[of['TrialNumber'].isin(trials[:,a])])
+    b_c, b_s, b_p = _get_card_feat(of[of['TrialNumber'].isin(trials[:,b])])
+    c_c, c_s, c_p = _get_card_feat(of[of['TrialNumber'].isin(trials[:,c])])
+    b_c_all, b_s_all, b_p_all = _get_card_feat(of[of['TrialNumber'].isin(trials[:,b])], 'all')
+    
+    idx1 = (a_c==b_c) | (a_s==b_s) | (a_p==b_p)
+    idx2 = np.sum([a_c==c_c, a_s==c_s, a_p==c_p], axis=0)==1
+    idx = idx1 & idx2
+    
+    prob = ((a_c==b_c) & (a_c==c_c)) | \
+           ((a_s==b_s) & (a_s==c_s)) | \
+           ((a_p==b_p) & (a_p==c_p))
+    prob = np.sum(prob[idx]) / len(prob[idx])
+    
+    
+    cond1 = np.array([(a_c[:,None]==b_c_all), (a_s[:,None]==b_s_all), (a_p[:,None]==b_p_all)])[:,idx]
+    cond2 = np.array([(a_c==c_c), (a_s==c_s), (a_p==c_p)])[:,idx]
+    chance = np.sum(
+        np.sum(
+            np.sum(
+                cond2[:,:,None]*cond1, 
+                axis=0
+            )[None,:,:] * cond1, 
+            axis=0
+        ), 
+        axis=1
+    )
+    chance = np.mean(chance) / 3
     
     return(prob, chance)
 
