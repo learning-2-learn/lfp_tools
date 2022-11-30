@@ -8,6 +8,342 @@ from matplotlib.widgets import Slider
 from sklearn.linear_model import LinearRegression
 
 #############
+#Decoders
+
+from sklearn.svm import LinearSVC
+class linear_decoder:
+    """
+    Class for decoding y based on x with sklearn.svm.LinearSVC
+    
+    Paramaters
+    ----------
+    num_samples : (int)
+        number of times to rerun find_acc for statistics
+    train_size : (float), between 0 and 1
+        percentage of train/test split
+    C : (float)
+        regularization parameter in LinearSVC. Low values correspond to high regularization
+    dual : (bool)
+        Flag indicating solving the dual problem
+        If the number of samples is greater than the number of parameters priortize dual=False
+    fit_intercept : (bool)
+        Flag indicating whether or not to fit the intercept with LinearSVC
+    
+    Methods
+    -------
+    find_C(x, y, min_C=-14, max_C=0):
+        Method for finding the best regularization. 
+        Tries every regularization from 10^min_C to 10^max_C in for every power of 10
+        
+        Parameters
+        ----------
+        x : float array of size (num data points, dimension of each data point)
+            data matrix
+        y : int array of size (num data points)
+            corresponding element answer
+        min_C : (int) less than max_C
+            minimum regularization to try
+        max_C : (int)
+            maximum regularization to try
+            
+        Returns
+        -------
+        c_hyper : array of floats
+            all values of regularization tried
+        train_scores : array of floats with size (c_hyper)
+            train accuracy for each value of C
+        test_scores : array of floats with size (c_hyper)
+            test accuracy for each value of C
+    
+    find_acc(x, y):
+        Method for finding the accuracy of fitting y to x with a linear SVC
+        Tries fitting self.num_samples number of times
+        
+        Parameters
+        ----------
+        x : float array of size (num data points, dimension of each data point)
+            data matrix
+        y : int array of size (num data points)
+            corresponding element answer
+            
+        Returns
+        -------
+        train_scores : array of floats with size (self.num_samples)
+            train accuracy for each run
+        test_scores : array of floats with size (self.num_samples)
+            test accuracy for each run
+        chance_scores : array of floats with size (self.num_samples)
+            chance accuracy for each run
+        coefs : array of floats with size (self.num_samples, dimension of each data point)
+            coefficients for each run
+    """
+    def __init__(self, num_samples=50, train_size=0.8, C=1*10**-7, dual=False, fit_intercept=False):
+        """
+        Initializes linear decoder class
+        
+        Paramaters
+        ----------
+        num_samples : (int)
+            number of times to rerun find_acc for statistics
+        train_size : (float), between 0 and 1
+            percentage of train/test split
+        C : (float)
+            regularization parameter in LinearSVC. Low values correspond to high regularization
+        dual : (bool)
+            Flag indicating solving the dual problem
+            If the number of samples is greater than the number of parameters priortize dual=False
+        fit_intercept : (bool)
+            Flag indicating whether or not to fit the intercept with LinearSVC
+        """
+        self.train_size = train_size
+        self.C = C
+        self.dual = dual
+        self.fit_intercept = fit_intercept
+        self.num_samples = num_samples
+        
+    def find_C(self, x, y, min_C=-14, max_C=0):
+        """
+        Method for finding the best regularization. 
+        Tries every regularization from 10^min_C to 10^max_C in for every power of 10
+        
+        Parameters
+        ----------
+        x : float array of size (num data points, dimension of each data point)
+            data matrix
+        y : int array of size (num data points)
+            corresponding element answer
+        min_C : (int) less than max_C
+            minimum regularization to try
+        max_C : (int)
+            maximum regularization to try
+            
+        Returns
+        -------
+        c_hyper : array of floats
+            all values of regularization tried
+        train_scores : array of floats with size (c_hyper)
+            train accuracy for each value of C
+        test_scores : array of floats with size (c_hyper)
+            test accuracy for each value of C
+        """
+        c_hyper = np.array([1*10**i for i in range(min_C, max_C)])
+        
+        train_scores = np.empty((len(c_hyper)))
+        test_scores = np.empty((len(c_hyper)))
+        chance_scores = np.empty((len(c_hyper)))
+        coefs = np.empty((len(c_hyper), x.shape[1]))
+        
+        for i,c in enumerate(c_hyper):
+            self.C = c
+            x_sub, y_sub = self._balance_data(x, y)
+            x_train, x_test, y_train, y_test = self._train_test_split(x_sub, y_sub)
+            x_train, x_test = self._norm_data(x_train, x_test)
+            
+            train_scores[i], test_scores[i], coefs[i] = self._fit_data(x_train, y_train, x_test, y_test)
+            
+        return(c_hyper, train_scores, test_scores)
+    
+    def find_acc(self, x, y):
+        """
+        Method for finding the accuracy of fitting y to x with a linear SVC
+        Tries fitting self.num_samples number of times
+        
+        Parameters
+        ----------
+        x : float array of size (num data points, dimension of each data point)
+            data matrix
+        y : int array of size (num data points)
+            corresponding element answer
+            
+        Returns
+        -------
+        train_scores : array of floats with size (self.num_samples)
+            train accuracy for each run
+        test_scores : array of floats with size (self.num_samples)
+            test accuracy for each run
+        chance_scores : array of floats with size (self.num_samples)
+            chance accuracy for each run
+        coefs : array of floats with size (self.num_samples, dimension of each data point)
+            coefficients for each run
+        """
+        train_scores = np.empty((self.num_samples))
+        test_scores = np.empty((self.num_samples))
+        chance_scores = np.empty((self.num_samples))
+        coefs = np.empty((self.num_samples, x.shape[1]))
+
+        for i in range(self.num_samples):
+            x_sub, y_sub = self._balance_data(x, y)
+            x_train, x_test, y_train, y_test = self._train_test_split(x_sub, y_sub)
+            x_train, x_test = self._norm_data(x_train, x_test)
+            
+            train_scores[i], test_scores[i], coefs[i] = self._fit_data(x_train, y_train, x_test, y_test)
+            chance_scores[i] = self._fit_chance(x_train, y_train, x_test, y_test)
+
+        return(train_scores, test_scores, chance_scores, coefs)
+        
+    def _balance_data(self, x, y):
+        """
+        Helper function for balancing the data
+        Balances data by taking a random subselection of points such that
+            there are equal numbers of points with unique values of y
+        
+        Parameters
+        ----------
+        x : float array of size (num data points, dimension of each data point)
+            data matrix
+        y : int array of size (num data points)
+            corresponding element answer
+        
+        Returns
+        -------
+        x_sub : float array of size (balanced number of data points, dimension of each data point)
+            data matrix
+        y_sub : int array of size (balanced number of data points)
+            corresponding element answer
+        """
+        y_vals = np.unique(y)
+        max_num = np.min([np.sum(y==r) for r in y_vals])
+        
+        x_sub = np.empty((len(y_vals), max_num, x.shape[1]))
+        y_sub = np.empty((len(y_vals), max_num), dtype=int)
+        for i,r in enumerate(y_vals):
+            idx = np.random.choice(np.arange(np.sum(y==r)), max_num, replace=False)
+            x_sub[i] = x[y==r][idx]
+            y_sub[i] = y[y==r][idx]
+            
+        x_sub = np.vstack(x_sub)
+        y_sub = np.hstack(y_sub)
+        return(x_sub, y_sub)
+        
+    def _train_test_split(self, x, y):
+        """
+        Helper function for getting the train test split
+        
+        Parameters
+        ----------
+        x : float array of size (num data points, dimension of each data point)
+            data matrix
+        y : int array of size (num data points)
+            corresponding element answer
+        
+        Returns
+        -------
+        x_train : float array of size (num training data points, dimension of each data point)
+            data matrix
+        y_train : int array of size (num training data points)
+            corresponding element answer
+        x_test : float array of size (num testing data points, dimension of each data point)
+            data matrix
+        y_test : int array of size (num testing data points)
+            corresponding element answer
+        """
+        x_train = []
+        x_test = []
+        y_train = []
+        y_test = []
+        for val in np.unique(y):
+            idx_train = np.random.choice(
+                np.arange(np.sum(y==val)), 
+                int(np.sum(y==val)*self.train_size),
+                replace=False
+            )
+            idx_test = np.array([i for i in np.arange(np.sum(y==val)) if i not in idx_train])
+            x_train.append(x[y==val][idx_train])
+            x_test.append(x[y==val][idx_test])
+            y_train.append(y[y==val][idx_train])
+            y_test.append(y[y==val][idx_test])
+        return(
+            np.vstack(x_train),
+            np.vstack(x_test),
+            np.hstack(y_train),
+            np.hstack(y_test)
+        )
+    
+    def _norm_data(self, x_train, x_test):
+        """
+        Helper function for normalizing the data
+        Normalizes by finding the mean and standard deviation of the training set
+        Affects both the train and test set equally
+        
+        Parameters
+        ----------
+        x_train : float array of size (num data points, dimension of each data point)
+            data matrix
+        x_test : float array of size (num data points, dimension of each data point)
+            data_matrix
+        
+        Returns
+        -------
+        x_train : float array of size (num data points, dimension of each data point)
+            data matrix normalized
+        x_test : float array of size (num data points, dimension of each data point)
+            data_matrix normalized
+        """
+        mean = np.mean(x_train, axis=0)
+        std = np.std(x_train, axis=0)
+        x_train = (x_train - mean[None,:]) / std[None,:]
+        x_test = (x_test - mean[None,:]) / std[None,:]
+        return(x_train, x_test)
+    
+    def _fit_data(self, x_train, y_train, x_test, y_test):
+        """
+        Helper function for fitting the data
+        
+        Parameters
+        ----------
+        x_train : float array of size (num training data points, dimension of each data point)
+            data matrix
+        y_train : int array of size (num training data points)
+            corresponding element answer
+        x_test : float array of size (num testing data points, dimension of each data point)
+            data matrix
+        y_test : int array of size (num testing data points)
+            corresponding element answer
+            
+        Returns
+        -------
+        train_scores : (float)
+            fit score on training data
+        test_scores : (float)
+            fit score on testing data
+        coefs : array of floats
+            coefficients for LinearSVC
+        """
+        svc = LinearSVC(C=self.C, dual=self.dual, fit_intercept=self.fit_intercept)
+        svc.fit(x_train, y_train)
+        train_scores = svc.score(x_train, y_train)
+        test_scores = svc.score(x_test, y_test)
+        coefs = svc.coef_[0]
+        return(train_scores, test_scores, coefs)
+    
+    def _fit_chance(self, x_train, y_train, x_test, y_test):
+        """
+        Helper function for finding the chance accuracies by scrambling to true answers
+        
+        Parameters
+        ----------
+        x_train : float array of size (num training data points, dimension of each data point)
+            data matrix
+        y_train : int array of size (num training data points)
+            corresponding element answer
+        x_test : float array of size (num testing data points, dimension of each data point)
+            data matrix
+        y_test : int array of size (num testing data points)
+            corresponding element answer
+            
+        Returns
+        -------
+        chance_scores : (float)
+            chance score on training data
+        """
+        svc = LinearSVC(C=self.C, dual=self.dual, fit_intercept=self.fit_intercept)
+        svc.fit(x_train, np.random.choice(y_train, len(y_train), replace=False))
+        chance_scores = svc.score(x_test, np.random.choice(y_test, len(y_test), replace=False))
+        return(chance_scores)
+
+
+
+#############
 #Between ###, functions for finding probabilities of choosing features
 
 def _get_trial_type(of):
