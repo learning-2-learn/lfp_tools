@@ -7,6 +7,52 @@ import scipy.signal as ss
 from matplotlib.widgets import Slider
 from sklearn.linear_model import LinearRegression
 
+def explore_vs_exploit(ar, criterion=2, cor=200, inc=206):
+    """
+    Function for evaluating if an agent is in an explore or exploit state
+    With this model, the agent changes between states upon criterion number of correct or incorrect
+    E.g. the array 200, 200, 200, 206, 206, 200 (criterion=2) will be evaluated as
+    exploit, exploit, exploit, exploit, explore, explore
+    
+    Parameters
+    ----------
+    ar : array with int elements equal to one of 2 values (corresponding to cor or inc parameters)
+        array of responses to compute exploring vs exploiting
+    criterion : int
+        threshold for when to change state
+    cor : int
+        value of being correct (associated with exploiting)
+    inc : int
+        value of being incorrect (associated with exploration)
+        
+    Returns
+    -------
+    explore : array of ints (1 or 0)
+        If 1, corresponds to being in an exploration state
+        If 0, corresponds to being in an exploitation state
+    """
+    explore = np.empty(len(ar), dtype=int)
+    if np.all(ar[:criterion]==cor):
+        explore[:criterion] = 0
+    else:
+        explore[:criterion] = 1
+    
+    for i in range(criterion,len(ar)):
+        if explore[i-1]==1:
+            if np.all(ar[i-criterion+1:i+1]==200):
+                explore[i] = 0
+            else:
+                explore[i] = 1
+        elif explore[i-1]==0:
+            if np.all(ar[i-criterion+1:i+1]==206):
+                explore[i] = 1
+            else:
+                explore[i] = 0
+    
+    return(explore)
+
+
+
 #############
 #Decoders
 
