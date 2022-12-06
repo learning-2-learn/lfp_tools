@@ -327,6 +327,7 @@ class linear_decoder:
         """
         mean = np.mean(x_train, axis=0)
         std = np.std(x_train, axis=0)
+        std[std==0] = 1 # This enforces nothing to happen for non-varying parameters
         x_train = (x_train - mean[None,:]) / std[None,:]
         x_test = (x_test - mean[None,:]) / std[None,:]
         return(x_train, x_test)
