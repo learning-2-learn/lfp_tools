@@ -52,6 +52,52 @@ def get_sac_dataframe(fs, species, subject, exp, session, get_json=False):
         with fs.open(loc+'.csv') as f:
             sac = pd.read_csv(f, index_col=0)
         return(sac)
+    
+    
+def get_electrode_locations(fs, species, subject, exp, session, chans_spc=None):
+    '''
+    Gathers electrode locations
+    
+    Parameters
+    -------------------
+    fs : filesystem object
+    species : the species
+    subject : the subject
+    exp : the experiment
+    session : the session to observe
+    chans_spc : specific channels to find xyz location
+        Use 'all' to get all channels, regardless if they've been determined as 'bad'
+    
+    Returns
+    -------------------
+    locs : pandas dataframe giving the coordinates of each electrode
+    '''
+    if len(session)==12: #For the cases like 201807250001
+        session = session[:8]
+        
+    file = 'nhp-lfp/wcst-preprocessed/rawdata/sub-'+subject+\
+           '/sess-'+session+\
+           '/session_info/sub-'+subject+\
+           '_sess-'+session+\
+           '_sessioninfo.json'
+    
+    assert fs.exists(file)
+    
+    with fs.open(file) as f:
+        locs = general.load_json_file_from_S3(f, fs)
+        
+    locs = locs['electrode_info']
+    locs = pd.DataFrame.from_dict(locs)
+    
+    if chans_spc=='all':
+        locs = locs
+    elif chans_spc!=None:
+        locs = locs[locs['electrode_id'].isin(chans_spc)]
+    else:
+        bad_chan = analysis.get_bad_channels(species, subject, exp, session)
+        locs = locs[~locs['electrode_id'].isin(bad_chan)]
+        
+    return(locs)
 
 
 def get_bad_trials(species, subject, exp, session):

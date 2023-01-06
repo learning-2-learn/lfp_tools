@@ -53,45 +53,6 @@ def get_exploration(ar, lag=1):
     return exploration
 
 from scipy.io import loadmat
-def get_electrode_xyz(fs, species, subject, exp, session, chans_spc=None):
-    '''
-    Clusters the channels based on their coordinates.
-    Currenty gathers from l2l.jbferre.scratch/20211013_xyz_coords
-    
-    Parameters
-    -------------------
-    fs : filesystem object
-    species : the species
-    subject : the subject
-    exp : the experiment
-    session : the session to observe
-    chans_spc : specific channels to find xyz location
-        Use 'all' to get all channels, regardless if they've been determined as 'bad'
-    
-    Returns
-    -------------------
-    cl : pandas dataframe giving the coordinates of each electrode
-    '''
-    with fs.open('l2l.jbferre.scratch/20211013_xyz_coords/epos_interaural_'+subject+session[2:]+'.mat') as f:
-        f_mat = loadmat(f)
-        keys = list(f_mat.keys())
-        datakeys = [i for i in keys if '__' not in i]
-        f_data = f_mat[datakeys[0]]
-        coords = pd.DataFrame(f_data, columns=['x', 'y', 'z']).fillna(0)
-    chan = np.hstack(([str(i) for i in range(1,125)], [str(i)+'a' for i in range(1,97)]))
-    coords['ch'] = chan
-    
-    if (chans_spc == 'all'):
-        coords = coords
-    elif (chans_spc != None):
-        coords = coords[coords['ch'].isin(chans_spc)]
-    else:
-        bad_chan = analysis.get_bad_channels(species, subject, exp, session)
-        coords = coords[~coords['ch'].isin(bad_chan)]
-    
-    return(coords)
-
-from scipy.io import loadmat
 def get_brian_state_model(fs, species, subject, exp, session):
     '''
     Gets the states from Brians state model
@@ -212,34 +173,6 @@ def get_ruby_model(fs):
     with fs.open('l2l.jbferre.scratch/WCST_model_data.csv') as f:
         rmodel = pd.read_csv(f)
     return(rmodel)
-
-def get_brain_areas(fs, speciecs, subject, exp, session):
-    '''
-    Gets the brain areas of all channels
-    
-    Parameters
-    ------------------------
-    fs : filesystem object
-    species : the species
-    subject : the subject
-    exp : the experiment
-    session : the session
-    
-    Returns
-    -------------------
-    chans : pandas dataframe that includes channels and brain areas
-    '''
-    # with fs.open('l2l.jbferre.scratch/sub-'+subject+'_sess-'+session+'_channellocations.csv') as f:
-    #     chans = pd.read_csv(f, names=['ch', 'area1', 'area2'])
-    #     chans[chans['ch'].isin([str(i) for i in range(200)])] = chans[chans['ch'].isin([str(i) for i in range(200)])].fillna('UnkT')
-    #     chans[chans['ch'].isin([str(i)+'a' for i in range(200)])] = chans[chans['ch'].isin([str(i)+'a' for i in range(200)])].fillna('UnkP')
-    file = 'l2l.jbferre.scratch/sub-'+subject+'_RecLocTable/sub-'+subject+'_sess-'+session+'_RecLocTable.csv'
-    if not fs.exists(file):
-        print('File does not exist')
-    else:
-        with fs.open(file) as f:
-            chans = pd.read_csv(f)
-    return(chans)
 
 from sklearn.cluster import AgglomerativeClustering
 def cluster_chans_by_coords(fs, subject, exp, session, n_clusters_t, n_clusters_a, chans_spc=None):
@@ -448,3 +381,76 @@ def bop_cluster(params):
 def flatten(t):
     return [item for sublist in t for item in sublist]
 
+
+####################################################################################
+
+# Old and not used anymore
+
+
+# from scipy.io import loadmat
+# def get_electrode_xyz(fs, species, subject, exp, session, chans_spc=None):
+#     '''
+#     Clusters the channels based on their coordinates.
+#     Currenty gathers from l2l.jbferre.scratch/20211013_xyz_coords
+    
+#     Parameters
+#     -------------------
+#     fs : filesystem object
+#     species : the species
+#     subject : the subject
+#     exp : the experiment
+#     session : the session to observe
+#     chans_spc : specific channels to find xyz location
+#         Use 'all' to get all channels, regardless if they've been determined as 'bad'
+    
+#     Returns
+#     -------------------
+#     cl : pandas dataframe giving the coordinates of each electrode
+#     '''
+#     with fs.open('l2l.jbferre.scratch/20211013_xyz_coords/epos_interaural_'+subject+session[2:]+'.mat') as f:
+#         f_mat = loadmat(f)
+#         keys = list(f_mat.keys())
+#         datakeys = [i for i in keys if '__' not in i]
+#         f_data = f_mat[datakeys[0]]
+#         coords = pd.DataFrame(f_data, columns=['x', 'y', 'z']).fillna(0)
+#     chan = np.hstack(([str(i) for i in range(1,125)], [str(i)+'a' for i in range(1,97)]))
+#     coords['ch'] = chan
+    
+#     if (chans_spc == 'all'):
+#         coords = coords
+#     elif (chans_spc != None):
+#         coords = coords[coords['ch'].isin(chans_spc)]
+#     else:
+#         bad_chan = analysis.get_bad_channels(species, subject, exp, session)
+#         coords = coords[~coords['ch'].isin(bad_chan)]
+    
+#     return(coords)
+
+
+# def get_brain_areas(fs, speciecs, subject, exp, session):
+#     '''
+#     Gets the brain areas of all channels
+    
+#     Parameters
+#     ------------------------
+#     fs : filesystem object
+#     species : the species
+#     subject : the subject
+#     exp : the experiment
+#     session : the session
+    
+#     Returns
+#     -------------------
+#     chans : pandas dataframe that includes channels and brain areas
+#     '''
+#     # with fs.open('l2l.jbferre.scratch/sub-'+subject+'_sess-'+session+'_channellocations.csv') as f:
+#     #     chans = pd.read_csv(f, names=['ch', 'area1', 'area2'])
+#     #     chans[chans['ch'].isin([str(i) for i in range(200)])] = chans[chans['ch'].isin([str(i) for i in range(200)])].fillna('UnkT')
+#     #     chans[chans['ch'].isin([str(i)+'a' for i in range(200)])] = chans[chans['ch'].isin([str(i)+'a' for i in range(200)])].fillna('UnkP')
+#     file = 'l2l.jbferre.scratch/sub-'+subject+'_RecLocTable/sub-'+subject+'_sess-'+session+'_RecLocTable.csv'
+#     if not fs.exists(file):
+#         print('File does not exist')
+#     else:
+#         with fs.open(file) as f:
+#             chans = pd.read_csv(f)
+#     return(chans)
