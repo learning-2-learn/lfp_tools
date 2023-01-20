@@ -52,62 +52,70 @@ def get_exploration(ar, lag=1):
     exploration = np.array(exploration)
     return exploration
 
-from scipy.io import loadmat
-def get_brian_state_model(fs, species, subject, exp, session):
+import pickle
+def get_vishwa_states(fs, subject, session, of=None):
     '''
-    Gets the states from Brians state model
-    NOTE: exp isn't used here, yet...
-    
+    Function to get the attentional states for each feature from Vishwa's/Brian's model
+    States are saved in l2l.jbferre.scratch currently
+    Note, the featureChoiceLikelihood dictionary may be useful, but it is NOT retrieved here
+    Takes data from 'superBlocksData', there is also 'BlocksData', 
+        which should be the same thing but each rule block
+        
     Parameters
     ----------
-    fs : filesystem object
-    species : the species
-    subject : the subject
-    exp : the experiment
-    session : the session to observe
+    fs : file system object
+    subject : subject
+    session : session. Note, not all sessions are found yet
+    of : object feature dataframe. Input this if you want to check to make sure data is aligned
     
     Returns
-    -------------------
-    sb_all : pandas dataframe giving the state as described by Brians model
+    -------
+    sb : dataframe with attentional states for each feature
     '''
-    file_sess = 'l2l.jbferre.scratch/brian_state_model/sam_files_session.mat'
-    file_K_3 = 'l2l.jbferre.scratch/brian_state_model/sam_most_likely_K_3.mat'
-    file_K_4 = 'l2l.jbferre.scratch/brian_state_model/sam_most_likely_K_4.mat'
+    if subject=='SA':
+        subject = 'sam'
+        
+    file = 'l2l.jbferre.scratch/012023_Vishwa_States/aligned_01_15_23/'+subject+'_aligned.pickle'
+    objects = []
+    with fs.open(file, 'rb') as f:
+        while True:
+            try:
+                objects.append(pickle.load(f))
+            except EOFError:
+                break
+
+    objects = objects[0][0]
+    superBlocksData = objects['superBlocksData']
     
-    with fs.open(file_sess) as f:
-        f_sess = loadmat(f)
-    with fs.open(file_K_3) as f:
-        f_3 = loadmat(f)
-    with fs.open(file_K_4) as f:
-        f_4 = loadmat(f)
+    idx = np.array(superBlocksData['session'])==session[2:]
+    if ~np.any(idx):
+        print('Session Not Computed, returning...')
+        return None
     
-    fileNames = f_sess['fileNames']
+    sb = pd.DataFrame()
+
+    temp = np.hstack([superBlocksData['trialIndex'][i] for i in range(len(idx)) if idx[i]])
+    sb['trialIndex'] = temp - 1
+
+    temp = np.hstack([superBlocksData['rule'][i] for i in range(len(idx)) if idx[i]])
+    sb['rule'] = temp
+
+    temp = np.hstack(np.array(superBlocksData['chosenObject'], dtype=object)[idx])
+    sb['chosenObject'] = temp
+
+    temp = np.hstack([superBlocksData['viterbi'][i] for i in range(len(idx)) if idx[i]])
+    for i in range(12):
+        sb['viterbi_'+str(i)] = np.array(temp[i], dtype=int)
+
+    # Checks to make sure it's aligned
+    if of is not None:
+        ic = np.array(of[of['TrialNumber'].isin(sb['trialIndex'].values)].ItemChosen.values, dtype=int)
+        rule = of[of['TrialNumber'].isin(sb['trialIndex'].values)].TrialType.values
+        
+        assert np.all(sb['chosenObject'].values==ic), 'Item chosen is not aligned'
+        assert np.all(sb['rule'].values==rule), 'Rule label is not aligned'
     
-    idx_name = 'sub-'+subject+'_sess-'+session[2:]+'_parsedbehavior.csv'
-    idx = np.argwhere(fileNames==idx_name)[:,0]
-    
-    fileNames = fileNames[idx]
-    
-    sessionIndex = f_sess['sessionIndex'][0][idx]
-    K3_mostLikelyBlocks = f_3['mostLikelyBlocks'][0][idx]
-    K3_ruleSuper = f_3['ruleSuper'][0][idx]
-    K4_mostLikelyBlocks = f_4['mostLikelyBlocks'][0][idx]
-    K4_ruleSuper = f_4['ruleSuper'][0][idx]
-    
-    sb_all = []
-    for i in range(len(idx)):
-        sb = pd.DataFrame()
-        sb['trialNum'] = sessionIndex[i][0] - 1
-        sb['K3_ruleSuper'] = np.insert(K3_ruleSuper[i][0], 0, -1)
-        for j in range(12):
-            sb['K3_rule'+str(j)] = np.insert(np.array(K3_mostLikelyBlocks[i][j], dtype=int), 0, -1)
-        sb['K4_ruleSuper'] = np.insert(K4_ruleSuper[i][0], 0, -1)
-        for j in range(12):
-            sb['K4_rule'+str(j)] = np.insert(np.array(K4_mostLikelyBlocks[i][j], dtype=int), 0, -1)
-        sb_all.append(sb)
-    sb_all = pd.concat(sb_all, ignore_index=True)
-    
-    return(sb_all)
+    return(sb)
 
 import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
