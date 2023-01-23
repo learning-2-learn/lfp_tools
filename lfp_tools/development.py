@@ -52,8 +52,119 @@ def get_exploration(ar, lag=1):
     exploration = np.array(exploration)
     return exploration
 
+def get_categories(sb, of):
+    '''
+    Gets the categories of states for all blocks
+    Utilizes code from Vishwa : getTrialsCategory()
+    Categories are:
+        0 : Perseveration
+        1 : Random Search
+        2 : Rule Random Exploration
+        3 : Rule Favored Exploration
+        4 : Rule Preferred, No Exploration
+        5 : Rule Persist, No Exploration
+        
+    Parameters
+    ----------
+    sb : state dataframe for all features
+    of : object features dataframe
+    
+    Returns
+    -------
+    categories : array of length (num trials), indicating the category of a given trial
+    '''
+    def getTrialsCategory(state, prevRule, currRule):
+        '''
+        Code to get category of states (for a single block)
+        Code from Vishwa
+
+        Parameters
+        ----------
+        state : viterbi states (12 x num trials)
+        prevRule : previous rule (int)
+        currRule : current rule (int)
+
+        Returns
+        -------
+        trialsCategory : categories (6 x num trials)
+        '''
+        T = state.shape[1]
+        trialsCategory = np.zeros([6,T])
+
+        # perseveration
+        # previous rule in persist state
+        prevF = state[prevRule,:] == 0
+        for t in range(T):
+            if prevF[t] == 1:
+                trialsCategory[0,t] = 1
+            elif prevF[t] == 0:
+                break
+
+        # perseveration length
+        numP = int(np.sum(trialsCategory[0,:]))
+        # if perseveration lasts the entire block
+        if numP == T:
+            return trialsCategory
+        # if perseveration doesn't last the entire block
+        else:
+            for t in range(numP,T):
+                # features in persist/preferred at trial t
+                SRule = state[currRule,t]
+                SNonRule = state[:,t]
+                SNonRule = np.delete(SNonRule,currRule,axis=0)
+                # random search
+                if np.sum(SNonRule <= 1) == 0 and SRule > 1:
+                    trialsCategory[1,t] = 1
+                # rule random exploration
+                elif np.sum(SNonRule <= 1) > 0 and SRule > 1:
+                    trialsCategory[2,t] = 1
+                # rule favored exploration
+                elif np.sum(SNonRule <= 1) > 0 and SRule <= 1:
+                    trialsCategory[3,t] = 1
+                # rule preferred, no exploration
+                elif np.sum(SNonRule <= 1) == 0 and SRule == 1:
+                    trialsCategory[4,t] = 1
+                # rule persist, no exploration
+                elif np.sum(SNonRule <= 1) == 0 and SRule == 0:
+                    trialsCategory[5,t] = 1
+                else:
+                    print('trial has no category')
+
+        # check that every trial is labeled
+        if np.array_equal(np.sum(trialsCategory,axis=0),np.ones([T])) is False:
+            print('trialsCategory is not correct')
+
+        return trialsCategory
+    
+    of_sub = of[of['TrialNumber'].isin(sb['trialIndex'])]
+    blocks = np.unique(of_sub.BlockNumber.values)
+
+    cat_all = []
+    for b in blocks:
+        trials_in_block = of_sub[of_sub['BlockNumber']==b].TrialNumber.values
+        sb_sub = sb[sb['trialIndex'].isin(trials_in_block)]
+        states = sb_sub[['viterbi_'+str(i) for i in range(12)]].values.T
+
+        currRule = of_sub[of_sub['BlockNumber']==b].TrialType.values[0]
+        assert np.all(currRule==sb_sub.rule.values)
+
+        if b==0:
+            prevRule = -1
+        else:
+            prevRule = of[of['BlockNumber']==b-1].TrialType.values[0]
+
+        cat = getTrialsCategory(states, prevRule, currRule)
+        cat_all.append(cat)
+
+    cat_all = np.hstack(cat_all)
+    
+    assert(np.all(np.sum(cat_all==0, axis=0)==5)), "Duplicate categories"
+    categories = np.argmax(cat_all, axis=0)
+    
+    return(categories)
+
 import pickle
-def get_vishwa_states(fs, subject, session, of=None):
+def get_vishwa_states(fs, subject, session, of):
     '''
     Function to get the attentional states for each feature from Vishwa's/Brian's model
     States are saved in l2l.jbferre.scratch currently
@@ -66,7 +177,7 @@ def get_vishwa_states(fs, subject, session, of=None):
     fs : file system object
     subject : subject
     session : session. Note, not all sessions are found yet
-    of : object feature dataframe. Input this if you want to check to make sure data is aligned
+    of : object feature dataframe
     
     Returns
     -------
@@ -108,12 +219,14 @@ def get_vishwa_states(fs, subject, session, of=None):
         sb['viterbi_'+str(i)] = np.array(temp[i], dtype=int)
 
     # Checks to make sure it's aligned
-    if of is not None:
-        ic = np.array(of[of['TrialNumber'].isin(sb['trialIndex'].values)].ItemChosen.values, dtype=int)
-        rule = of[of['TrialNumber'].isin(sb['trialIndex'].values)].TrialType.values
-        
-        assert np.all(sb['chosenObject'].values==ic), 'Item chosen is not aligned'
-        assert np.all(sb['rule'].values==rule), 'Rule label is not aligned'
+    ic = np.array(of[of['TrialNumber'].isin(sb['trialIndex'].values)].ItemChosen.values, dtype=int)
+    rule = of[of['TrialNumber'].isin(sb['trialIndex'].values)].TrialType.values
+
+    assert np.all(sb['chosenObject'].values==ic), 'Item chosen is not aligned'
+    assert np.all(sb['rule'].values==rule), 'Rule label is not aligned'
+    
+    categories = get_categories(sb, of)
+    sb['category'] = categories
     
     return(sb)
 
