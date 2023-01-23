@@ -172,6 +172,20 @@ def get_vishwa_states(fs, subject, session, of):
     Takes data from 'superBlocksData', there is also 'BlocksData', 
         which should be the same thing but each rule block
         
+    Viterbi_# are the attentional states for each feature number #
+        0 : Persist
+        1 : Preferred
+        2 : Random
+        3 : Avoid
+        
+    Trial categories are:
+        0 : Perseveration
+        1 : Random Search
+        2 : Rule Random Exploration
+        3 : Rule Favored Exploration
+        4 : Rule Preferred, No Exploration
+        5 : Rule Persist, No Exploration
+        
     Parameters
     ----------
     fs : file system object
