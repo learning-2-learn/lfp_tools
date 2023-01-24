@@ -46,7 +46,7 @@ def get_filename_by_chan(filenames, chan):
     return(file)
 
 
-def new_derivative_name(filename, derivative):
+def new_derivative_name(filename, derivative, folder):
     """
     Finds the new file location name for the derivative
 
@@ -54,13 +54,14 @@ def new_derivative_name(filename, derivative):
     ----------
     filename: the location of the file to be changed.
     derivative: the name of the new derivative. E.g. mwt-4
+    folder: name of folder to place new derivatives into
 
     Returns
     -------
     filename for datafile, filename for json file
     """
-    if ('U19Data' in filename):
-        filename = filename.replace('U19Data','derivatives')
+    if ('rawdata' in filename):
+        filename = filename.replace('rawdata', folder)
     folders = filename.rsplit('/', 1)
     new = folders[0] + '/' + derivative + '/' + folders[1].split('.')[0] + '_' + derivative + '.' + folders[1].split('.')[1]
     new_json = new.rsplit('.', 1)[0] + '.json'
