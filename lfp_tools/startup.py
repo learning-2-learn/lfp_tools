@@ -100,7 +100,7 @@ def get_electrode_locations(fs, species, subject, exp, session, chans_spc=None):
     return(locs)
 
 
-def get_bad_trials(species, subject, exp, session):
+def get_bad_trials(species, subject, exp, session, return_chans=False):
     """
     Gets the bands for a desired subject and experiment
     
@@ -110,17 +110,31 @@ def get_bad_trials(species, subject, exp, session):
     subject : the selected subject
     exp : the selected experiment
     session : the selected session
+    return_chans : flag indicating whether to return which channels caused the trial to be thrown out
     
     Returns
     -------
     bad_trials : array of bad trials for given session
+        or
+    bad_t_c : dictionary where keys are the trials and values are arrays of bad channels for that trial
     """
     bad_trials_all = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_bad-trials.json')
-    if (np.any(session==np.array(list(bad_trials_all.keys())))):
-        bad_trials = np.sort([int(t) for t in bad_trials_all[session]])
+    
+    all_keys = np.array(list(bad_trials_all.keys()))
+    session_keys = [k for k in all_keys if subject+'-'+session in k]
+    
+    if (len(session_keys)>0):
+        bad_trials = np.sort([int(k.split('t_')[1]) for k in session_keys])
+        
+        if return_chans:
+            bad_t_c = {}
+            for t in bad_trials:
+                temp = bad_trials_all[subject+'-'+session+'-t_'+str(t)]
+                temp = np.array([t.strip('\'') for t in temp.strip('[]').split(', ')])
+                bad_t_c[t] = temp
+            return(bad_t_c)
     else:
-        print('Bad trials for session '+session+' have not been identified, '+\
-              'please run \'20211109_fs_bad_trials.ipynb\' first')
+        print('No bad trials for session '+session+' have been identified')
         bad_trials = np.array([])
     return(bad_trials)
 

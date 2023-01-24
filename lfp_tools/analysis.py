@@ -2117,12 +2117,21 @@ def get_bad_channels(species, subject, exp, session):
     List of bad channels
     """
     bad_channels = general.load_json_file('sp-'+species+'_sub-'+subject+'_exp-'+exp+'_bad_channels.json')
-    all_sessions = list(bad_channels.keys())
-    if (subject + session in all_sessions):
-        return (bad_channels[subject + session])
-    else:
-        print('Either bad channels haven\'t been identified or incorrect subject/session')
-        return ([])
+    
+    bad = []
+    all_keys = list(bad_channels.keys())
+    for key in ['no_file', 'not_in_brain', 'too_many_artifacts', 'noisy']:
+        if subject + '-' + session + '-' + key not in all_keys:
+            print('Either bad channels haven\'t been identified or incorrect subject/session')
+            return ([])
+        else:
+            temp = bad_channels[subject + '-' + session + '-' + key]
+            temp = np.array([t.strip('\'') for t in temp.strip('[]').split(', ')])
+            bad.append(temp)
+    
+    bad = np.hstack(bad)
+    bad = bad[bad!='']
+    return(bad)
     
     
     #Helper functions
