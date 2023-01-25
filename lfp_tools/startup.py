@@ -234,7 +234,7 @@ def get_filenames(fs, species, subject, exp, session_id, datatype, params=[]):
     exp: the selected experiment
     session_id: the session identifier
     datatype: the type of data to retrieve.
-        'behavior', 'object_features', 'eye', 'chan_loc', 'raw', 'derivative'
+        'behavior', 'object_features', 'eye', 'chan_loc', 'raw', 'derivative', 'derivative_012023'
     params: list of parameters interested in, in order (e.g. lfp_30)
     
     Returns
@@ -290,10 +290,18 @@ def get_filenames(fs, species, subject, exp, session_id, datatype, params=[]):
             files.append(file_loc['der_loc'] + '/sub-' + subject + '/sess-' + session_id + '/' + file_loc['ephys'][0] +\
                          '/' + '/'.join(params) + '/sub-' + subject + '_sess-' + session_id + '_chan-' + ch +\
                          '_' + '_'.join(params) + file_loc['ephys'][1])
+    elif (datatype == 'derivative_012023'):
+        chans = file_loc['chan']
+        chans = [c for c in chans if not 'GR' in c]
+        chans = [c for c in chans if c not in analysis.get_bad_channels(species, subject, exp, session_id)]
+        for ch in chans:
+            files.append(file_loc['der_loc'] + '_012023/sub-' + subject + '/sess-' + session_id + '/lfp' +\
+                         '/' + '/'.join(params) + '/sub-' + subject + '_sess-' + session_id + '_chan-' + ch +\
+                         '_' + '_'.join(params) + file_loc['ephys'][1])
     else:
         print('Wrong datatype, please input \'behavior\', \'eye\', \'raw\', or \'derivative\'')
      
-    if (datatype == 'raw' or datatype == 'derivative'):
+    if (datatype == 'raw' or datatype == 'derivative' or datatype == 'derivative_012023'):
         files_1 = [f for f in files if 'a' in f.split('_chan-')[1].split('_')[0].split('.')[0]]
         files_2 = [f for f in files if 'a' not in f.split('_chan-')[1].split('_')[0].split('.')[0]]
         bad_idx = []
