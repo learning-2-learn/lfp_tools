@@ -197,10 +197,27 @@ def get_vishwa_states(fs, subject, session, of):
     -------
     sb : dataframe with attentional states for each feature
     '''
-    if subject=='SA':
-        subject = 'sam'
+    #Goes from Vishwa to of rules
+    rule_map_dict = {
+        0:8,
+        1:11,
+        2:10,
+        3:9,
+        4:4,
+        5:7,
+        6:5,
+        7:6,
+        8:2,
+        9:0,
+        10:1,
+        11:3
+    }
+    
+    if subject!='SA':
+        print('Only Sam has been computed with this function')
         
-    file = 'l2l.jbferre.scratch/012023_Vishwa_States/aligned_01_15_23/'+subject+'_aligned.pickle'
+    file = 'l2l.jbferre.scratch/012023_Vishwa_States/aligned_02_10_2023/'+\
+           'SamAllSuperBlocksData.pickle'
     objects = []
     with fs.open(file, 'rb') as f:
         while True:
@@ -210,25 +227,27 @@ def get_vishwa_states(fs, subject, session, of):
                 break
 
     objects = objects[0][0]
-    superBlocksData = objects['superBlocksData']
+    assert np.all(np.array([len(np.unique(s)) for s in objects['sessionID']])==1)
+    session_dates = np.array([np.unique(s)[0] for s in objects['sessionID']])
     
-    idx = np.array(superBlocksData['session'])==session[2:]
+    idx = session_dates==session
     if ~np.any(idx):
         print('Session Not Computed, returning...')
         return None
     
     sb = pd.DataFrame()
 
-    temp = np.hstack([superBlocksData['trialIndex'][i] for i in range(len(idx)) if idx[i]])
-    sb['trialIndex'] = temp - 1
+    temp = np.hstack([objects['trialIndex'][i] for i in range(len(idx)) if idx[i]])
+    sb['trialIndex'] = temp
 
-    temp = np.hstack([superBlocksData['rule'][i] for i in range(len(idx)) if idx[i]])
-    sb['rule'] = temp
+    temp = np.hstack([objects['rule'][i] for i in range(len(idx)) if idx[i]])
+    temp2 = [rule_map_dict[r] for r in temp]
+    sb['rule'] = np.array(temp2, dtype=int)
 
-    temp = np.hstack(np.array(superBlocksData['chosenObject'], dtype=object)[idx])
-    sb['chosenObject'] = temp
+    temp = np.hstack(np.array(objects['chosenObject'], dtype=object)[idx])
+    sb['chosenObject'] = np.array(temp, dtype=int)
 
-    temp = np.hstack([superBlocksData['viterbi'][i] for i in range(len(idx)) if idx[i]])
+    temp = np.hstack([objects['viterbi'][i] for i in range(len(idx)) if idx[i]])
     for i in range(12):
         sb['viterbi_'+str(i)] = np.array(temp[i], dtype=int)
 
@@ -238,6 +257,9 @@ def get_vishwa_states(fs, subject, session, of):
 
     assert np.all(sb['chosenObject'].values==ic), 'Item chosen is not aligned'
     assert np.all(sb['rule'].values==rule), 'Rule label is not aligned'
+    
+    break_trials = of[of['TaskInterrupt']=='Post_break'].TrialNumber.values
+    assert len(sb[sb['trialIndex'].isin(break_trials)])==0, 'Post break trials are included'
     
     categories = get_categories(sb, of)
     sb['category'] = categories
