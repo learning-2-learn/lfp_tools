@@ -249,7 +249,7 @@ def get_vishwa_states(fs, subject, session, of):
 
     temp = np.hstack([objects['viterbi'][i] for i in range(len(idx)) if idx[i]])
     for i in range(12):
-        sb['viterbi_'+str(i)] = np.array(temp[i], dtype=int)
+        sb['viterbi_'+str(rule_map_dict[i])] = np.array(temp[i], dtype=int)
 
     # Checks to make sure it's aligned
     ic = np.array(of[of['TrialNumber'].isin(sb['trialIndex'].values)].ItemChosen.values, dtype=int)
