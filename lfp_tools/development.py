@@ -198,21 +198,53 @@ def get_vishwa_states(fs, subject, session, of):
     sb : dataframe with attentional states for each feature
     '''
     #Goes from Vishwa to of rules
-    rule_map_dict = {
-        0:8,
-        1:11,
-        2:10,
-        3:9,
-        4:4,
-        5:7,
-        6:5,
-        7:6,
-        8:2,
-        9:0,
-        10:1,
-        11:3
-    }
-    
+    temp = np.unique([str(r) for r in of[['CurrentRule','TrialType']].values])
+    temp = [t.replace('[','').replace(']','') for t in temp]
+    temp = [[t.split('\'')[1], int(t.split('\'')[2])] for t in temp]
+    ordered_rule_lists = [
+        np.array([
+            'POLKADOT','RIPPLE','ESCHER','SWIRL',\
+            'CYAN','MAGENTA','YELLOW','GREEN',\
+            'CIRCLE','TRIANGLE','STAR','SQUARE'
+        ]),
+        np.array([
+            'WOOD','ZIGZAG','KARATE','FEATHERS',\
+            'LIME','UMBER','PURPLE','ORANGE',\
+            'DROPLET','HEART','BUTTERFLY','FLOWER'
+        ]),
+        np.array([
+            'BRICKS','DALMATIONS','ORNATE','CLASSY GRID',\
+            'GREEN2','PURPLE','YELLOW2','RED',\
+            'SHELL','RHINO','CRESENT','SEAHORSE'
+        ]),
+        np.array([
+            'PLANT','ESCHER2','WAVES','STONES',\
+            'SEAFOAM','SALMON','YELLOW3','BLUE',\
+            'SOUTH AMERICA','BRONCHIOSAUR','CHRISTMAS','HOUSE'
+        ]),
+        np.array([
+            'FLOWERS','ZEBRA','TRIANGLES','STRIPES',\
+            'LIME2','GREY','PINK','BLUE2',\
+            'PAPAYA','GHOST','LOTUS','ELEPHANT'
+        ])
+    ]
+    for j in range(len(ordered_rule_lists)):
+        if len([t for t in temp if np.any(t[0]==ordered_rule_lists[j])])==len(temp):
+            temp = [[t,i] for i,t in enumerate(ordered_rule_lists[j])]
+            ruleset_num = j
+            break
+
+    temp2 = np.hstack([
+        np.sort(np.unique(of['Item0Shape'].values)),
+        np.sort(np.unique(of['Item0Color'].values)),
+        np.sort(np.unique(of['Item0Pattern'].values))
+    ])
+
+    temp = [[t[0],t[1],np.argwhere(t[0]==temp2)[0,0]] for t in temp]
+
+    rule_map_dict = {t[2]:t[1] for t in temp}
+    rule_map_dict[-1] = -1
+
     if subject!='SA':
         print('Only Sam has been computed with this function')
         
@@ -256,7 +288,16 @@ def get_vishwa_states(fs, subject, session, of):
     rule = of[of['TrialNumber'].isin(sb['trialIndex'].values)].TrialType.values
 
     assert np.all(sb['chosenObject'].values==ic), 'Item chosen is not aligned'
-    assert np.all(sb['rule'].values==rule), 'Rule label is not aligned'
+    if not np.all(sb['rule'].values==rule):
+        rule2 = rule.copy()
+        if ruleset_num==2:
+            rule2[(rule2==4) | (rule2==6)] = -1
+        elif ruleset_num==3:
+            rule2[(rule2==6)] = -1
+        elif ruleset_num==4:
+            rule2[(rule2==4) | (rule2==7)] = -1
+        assert np.all(sb['rule'].values==rule2), 'Rule label is not aligned'
+        sb['rule'] = rule
     
     break_trials = of[of['TaskInterrupt']=='Post_break'].TrialNumber.values
     assert len(sb[sb['trialIndex'].isin(break_trials)])==0, 'Post break trials are included'
