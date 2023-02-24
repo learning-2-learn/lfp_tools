@@ -73,6 +73,7 @@ def get_electrode_locations(fs, species, subject, exp, session, chans_spc=None):
     locs : pandas dataframe giving the coordinates of each electrode
     '''
     if len(session)==12: #For the cases like 201807250001
+        full_session_name = session
         session = session[:8]
         
     file = 'nhp-lfp/wcst-preprocessed/rawdata/sub-'+subject+\
@@ -109,7 +110,7 @@ def get_electrode_locations(fs, species, subject, exp, session, chans_spc=None):
     elif chans_spc!=None:
         locs = locs[locs['electrode_id'].isin(chans_spc)]
     else:
-        bad_chan = analysis.get_bad_channels(species, subject, exp, session)
+        bad_chan = analysis.get_bad_channels(species, subject, exp, full_session_name)
         locs = locs[~locs['electrode_id'].isin(bad_chan)]
         
     return(locs)
