@@ -89,6 +89,21 @@ def get_electrode_locations(fs, species, subject, exp, session, chans_spc=None):
     locs = locs['electrode_info']
     locs = pd.DataFrame.from_dict(locs)
     
+    if subject=='SA':
+        ref_file = 'l2l.jbferre.scratch/electrode_information/'+\
+                   'sub-SA_channel_reference_and_company.csv'
+        with fs.open(ref_file, 'r') as ff:
+            ref = pd.read_csv(ff)
+            
+        chan = locs.electrode_id.values
+        ref_loc = np.empty(len(chan), dtype='<U20')
+        com_loc = np.empty(len(chan), dtype='<U20')
+        for i,c in enumerate(chan):
+            ref_loc[i] = ref[ref['channel']==c].reference.values[0]
+            com_loc[i] = ref[ref['channel']==c].company.values[0]
+        locs['reference'] = ref_loc
+        locs['company'] = com_loc
+    
     if chans_spc=='all':
         locs = locs
     elif chans_spc!=None:
