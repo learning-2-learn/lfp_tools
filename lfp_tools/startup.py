@@ -72,8 +72,8 @@ def get_electrode_locations(fs, species, subject, exp, session, chans_spc=None):
     -------------------
     locs : pandas dataframe giving the coordinates of each electrode
     '''
+    full_session_name = session
     if len(session)==12: #For the cases like 201807250001
-        full_session_name = session
         session = session[:8]
         
     file = 'nhp-lfp/wcst-preprocessed/rawdata/sub-'+subject+\
