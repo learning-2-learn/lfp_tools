@@ -378,6 +378,39 @@ def get_subjects(fs, species, exp):
         subjects = []
     return(subjects)
 
+def get_bipole_info(fs, species, subject, exp, session, ending='csv'):
+    '''
+    Gets bipole information
+    
+    Parameters
+    ----------
+    fs : filesystem object
+    species : the species
+    subject : the subject
+    exp : the experiment
+    session : the session
+    ending : ending of file name, can be csv or json for the respective file to retrieve
+    
+    Returns
+    -------
+    bipole : either pandas dataframe or json file with bipole information
+    '''
+    filename = 'nhp-lfp/wcst-preprocessed/derivatives_bipole/sub-'+subject+\
+               '/sess-'+session+\
+               '/bipole-info/sub-'+subject+\
+               '_sess-'+session+\
+               '_bipole-info.'+ending
+    assert fs.exists(filename), 'filename does not exist'
+    
+    if ending=='csv':
+        with fs.open(filename, 'r') as ff:
+            bipole = pd.read_csv(ff, index_col=0)
+            bipole = bipole.reset_index(drop=True)
+    else:
+        bipole = general.load_json_file_from_S3(filename, fs)
+            
+    return(bipole)
+
 def get_raw_filetype(species, subject, exp, session):
     '''
     Retrieves the filetype of the raw data
