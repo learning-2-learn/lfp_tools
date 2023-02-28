@@ -7,6 +7,33 @@ import s3fs
 
 from dask_gateway import Gateway
 
+def get_bipole_hilb_files(fs, species, subject, exp, session, band, dtype='abs'):
+    '''
+    Gets the preprocessed bipole-subtracted, Hilbert transformed data
+    
+    Parameters
+    ----------
+    fs : file system object
+    species : species
+    subject : the subject
+    exp : the experiment
+    session : the session
+    band : the bandpass band
+    dtype : string of 'abs' or 'ang', indicating the absolute value or phase of the Hilbert transform
+    
+    Returns
+    -------
+    files : list of files
+    '''
+    files = fs.ls(
+        'nhp-lfp/wcst-preprocessed/derivatives_bipole/sub-'+subject+\
+        '/sess-'+session+\
+        '/lfp/bipole/norm-z/notch-mne/bp-'+band+\
+        '/hilb-'+dtype
+    )
+    files = [f for f in files if '.mat' in f]
+    return(files)
+
 def get_fs():
     """
     Gets the filesystem object.
