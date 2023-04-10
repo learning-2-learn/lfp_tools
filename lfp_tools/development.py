@@ -164,10 +164,9 @@ def get_categories(sb, of):
     return(categories)
 
 import pickle
-def get_vishwa_states(fs, subject, session, of):
+def get_vishwa_states(subject, session, of):
     '''
     Function to get the attentional states for each feature from Vishwa's/Brian's model
-    States are saved in l2l.jbferre.scratch currently
     Note, the featureChoiceLikelihood dictionary may be useful, but it is NOT retrieved here
     Takes data from 'superBlocksData', there is also 'BlocksData', 
         which should be the same thing but each rule block
@@ -188,7 +187,6 @@ def get_vishwa_states(fs, subject, session, of):
         
     Parameters
     ----------
-    fs : file system object
     subject : subject
     session : session. Note, not all sessions are found yet
     of : object feature dataframe
@@ -248,17 +246,14 @@ def get_vishwa_states(fs, subject, session, of):
     if subject!='SA':
         print('Only Sam has been computed with this function')
         
-    file = 'l2l.jbferre.scratch/012023_Vishwa_States/aligned_02_10_2023/'+\
+    file = '/nas_data/012023_Vishwa_States/aligned_02_10_2023/'+\
            'SamAllSuperBlocksData.pickle'
-    objects = []
-    with fs.open(file, 'rb') as f:
-        while True:
-            try:
-                objects.append(pickle.load(f))
-            except EOFError:
-                break
+    
+    f = open(file,'rb')
+    objects = pickle.load(f)
+    f.close()
 
-    objects = objects[0][0]
+    objects = objects[0]
     assert np.all(np.array([len(np.unique(s)) for s in objects['sessionID']])==1)
     session_dates = np.array([np.unique(s)[0] for s in objects['sessionID']])
     

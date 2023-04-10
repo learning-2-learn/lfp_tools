@@ -231,6 +231,59 @@ def open_h5py_file(file, fs, num_return=1):
             data = np.array(data)
     return data
 
+def open_local_h5py_file(f_chan, num_return=1):
+    """
+    Gets the h5py file from local storage. The file must include only one datafile.
+
+    Parameters
+    ----------
+    f_chan: the location of the file to be opened.
+    num_return: number of data arguments to return. Use 'all' to return all of them
+
+    Returns
+    -------
+    Data file
+    """
+    f_chan = h5py.File(f_chan, 'r')
+    keys = list(f_chan.keys())
+    datakeys = [i for i in keys if '__' not in i]
+    if num_return=='all':
+        num_return = len(datakeys)
+    if num_return==1:
+        temp = f_chan[datakeys[0]]
+        data = temp[:].squeeze()
+    else:
+        data = []
+        for i in range(num_return):
+            temp = f_chan[datakeys[i]]
+            data.append(temp[:].squeeze())
+        data = np.array(data)
+    return data
+
+def save_dataframe(df, metadata, location, overwrite=False):
+    '''
+    Saves a dataframe locally
+    
+    Parameters
+    ----------------
+    df : dataframe in question
+    metadata : metadata about creation of dataframe
+    location : location of data, make sure it doesn't include any ending (.csv e.g.)
+    overwrite : if false, doesn't overwrite any data
+    
+    Returns
+    ----------------
+    'Files saved: ' + location
+    '''
+    if (not overwrite):
+        assert not (os.path.isfile(location+'.csv') or os.path.isfile(location+'.json')), \
+        'File already exists, check location and name'
+        
+    df.to_csv(location+'.csv')
+    save_json_file(metadata, location+'.json', local=True, overwrite=overwrite)
+    
+    return('Files saved: '+location)
+
 def save_dataframe_to_s3(fs, df, metadata, location, overwrite=False):
     '''
     Saves a dataframe to s3
