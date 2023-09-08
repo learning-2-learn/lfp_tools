@@ -251,7 +251,7 @@ def get_behavior(species, subject, exp, session, import_obj_features=True):
     return(df)
 
 
-def get_electrode_locations(species, subject, exp, session, chans_spc=None):
+def get_electrode_locations(species, subject, exp, session, chans_spc=None, modifiedInfo=False):
     '''
     Gathers electrode locations
     
@@ -272,7 +272,10 @@ def get_electrode_locations(species, subject, exp, session, chans_spc=None):
     if len(session)==12: #For the cases like 201807250001
         session = session[:8]
         
-    file = '/nas_data/rawdata/sub-'+subject+'/sess-'+session+'/session_info/sub-'+subject+'_sess-'+session+'_sessioninfo.json'
+    if modifiedInfo:
+        file = '/nas_data/rawdata/sub-'+subject+'/sess-'+session+'/session_info/sub-'+subject+'_sess-'+session+'_sessioninfomodified.json'
+    else:
+        file = '/nas_data/rawdata/sub-'+subject+'/sess-'+session+'/session_info/sub-'+subject+'_sess-'+session+'_sessioninfo.json'
     
     locs = general.load_json_file(file)
         
