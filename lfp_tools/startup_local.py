@@ -269,8 +269,8 @@ def get_electrode_locations(species, subject, exp, session, chans_spc=None, modi
     locs : pandas dataframe giving the coordinates of each electrode
     '''
     full_session_name = session
-    if len(session)==12: #For the cases like 201807250001
-        session = session[:8]
+    # if len(session)==12: #For the cases like 201807250001
+        # session = session[:8]
         
     if modifiedInfo:
         file = '/nas_data/rawdata/sub-'+subject+'/sess-'+session+'/session_info/sub-'+subject+'_sess-'+session+'_sessioninfomodified.json'
